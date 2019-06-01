@@ -1,13 +1,12 @@
 all: smoki
 
-smoki: main.o init.o
-	mpicc main.o init.o -o smoki
+smoki: main.o
+	mpic++ main.o -o -cl-opt-disable smoki
 
-init.o: init.c 
-	mpicc init.c -c -Wall
-
-main.o: main.c main.h
-	mpicc main.c -c -Wall
+main.o: main.cpp main.h
+	mpic++ main.cpp -c -Wall -cl-opt-disable
 
 clear: 
 	rm *.o smoki
+run:
+	mpirun -hostfile ./hostfile -np 4 ./smoki
