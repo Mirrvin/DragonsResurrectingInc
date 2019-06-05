@@ -3,11 +3,7 @@
 #include "specialists/Specialist.h"
 #include "specialists/HeadSpecialist.cpp"
 
-Specialist *specialist = new HeadSpecialist();
-bool inTeam = false;
-bool end = false;
-
-int rank;
+extern bool end;
 
 //extern void inicjuj(int *argc, char ***argv);
 void rootLoop(int size){
@@ -15,69 +11,85 @@ void rootLoop(int size){
     packet.id = 0;
     // while(!end){
     //     sleep(rand()%1000+1000);
-        // for(int i = 1;i < size; i++)
-            // MPI_Send(&packet, sizeof(packet_t), MPI_BYTE, i, TASK, MPI_COMM_WORLD);
-    //     taskId++;
+        for(int i = 1;i < size; i++){
+            MPI_Send(&packet, sizeof(packet_t), MPI_BYTE, 1, TASK, MPI_COMM_WORLD);
+            printf("wyslane\n");
+        }
+        for(int i = 1;i < size; i++){
+            MPI_Send(&packet, sizeof(packet_t), MPI_BYTE, i, END, MPI_COMM_WORLD);
+            printf("wyslane\n");
+        }
+        // taskId++;
     // }
+
 }
 
-void *runMonitorListen(void* m) {
-    Monitor *monitor = (Monitor*) m;
-    monitor->listen();
+void *handleLoop (void* s ) {
+    Specialist *specialist = (Specialist*) s;
+
+    while(!end) {
+        pthread_mutex_lock(&Monitor::handleMutex); // czeka, aż kolejka nie będzie pusta
+
+        pthread_mutex_lock(&Monitor::messageQueueMutex); // dostęp do kolejki wiadomości
+        packet_t packet = Monitor::messageQueue.front();
+        Monitor::messageQueue.pop;
+        pthread_mutex_unlock(&Monitor::messageQueueMutex);
+
+        specialist->handle(packet);
+
+        pthread_mutex_lock(&Monitor::messageQueueMutex);
+        if(!Monitor::messageQueue.empty) {
+            pthread_mutex_unlock(&Monitor::handleMutex); // kolejka nie jest pusta, lecimy dalej
+        }
+        pthread_mutex_unlock(&Monitor::messageQueueMutex);
+    }
+    Monitor::endListening();
+    // pthread_detach(pthread_self());
+    pthread_exit(NULL);
 }
 
-void headLoop(int rank, int size){
-    printf("grr0");
-    int resurrectionCounter = 0;
-    int bodyId, tailId;
+void headLoop(){
+    printf("headloop %d\n", Monitor::rank);
+    // int resurrectionCounter = 0;
+    // int bodyId, tailId;
 
-    // pthread_mutex_t lamportMutex = PTHREAD_MUTEX_INITIALIZER;
-    Specialist *specialist = new HeadSpecialist();
-    // Monitor *monitor = new Monitor(specialist, &lamportMutex);
-    // specialist->setMonitor(monitor);
-    // pthread_t threadMonitor;
-    // printf("grr1");
-    // pthread_create( &threadMonitor, NULL, runMonitorListen, monitor);
-    // printf("grr2");
-    // pthread_join(threadMonitor, NULL);
-    // monitor->listen();
+    Specialist *specialist = new HeadSpecialist(Monitor::rank, Monitor::size);
+    pthread_t handleThread;
+    pthread_create( &handleThread, NULL, &handleLoop, specialist);
+    Monitor::listen();
+    pthread_join(handleThread,NULL);
     delete specialist;
-    // pthread_mutex_destroy(&lamportMutex);
 }
 
 void bodyLoop(){
+    printf("bodyloop %d\n", Monitor::rank);
     int resurrectionCounter = 0;
     int headId, tailId;
 }
 void tailLoop(){
+    printf("tailloop %d\n", Monitor::rank);
     int resurrectionCounter = 0;
     int headId, bodyId;
 }
-void handleMain(packet_t packet, MPI_Status status) {
-    specialist->handle(packet, status);
-}
+
 int main(int argc, char **argv)
 {
     /* Tworzenie wątków, inicjalizacja itp */
-    int size;
     int provided;
-    printf("omg");
-    // MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
-    MPI_Init(&argc, &argv);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    printf("main\n");
+    MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+    Monitor::initialize();    
 
-
-    int type = rand() % 3 + 1;
-    if (rank == ROOT){
-        rootLoop(size);
-    } else //if (type == HEAD) {
-        headLoop(rank, size);
-    // } else if (type == BODY) {
-    //     bodyLoop();
-    // } else if (type == TAIL) {
-    //     tailLoop();
-    // }
+    int type = Monitor::rank%3;
+    if (Monitor::rank == ROOT){
+        rootLoop(Monitor::size);
+    } else if (type == HEAD) {
+        headLoop();
+    } else if (type == BODY) {
+        bodyLoop();
+    } else if (type == TAIL) {
+        //tailLoop();
+    }
     //finalizuj();
     MPI_Finalize();
     return 0;

@@ -1,45 +1,60 @@
 #include "main.h"
-// class Specialist;
 #include "specialists/Specialist.h"
 class Monitor {
 private:
-    bool listening = false;
-    unsigned int lamport = 0;
-    pthread_mutex_t *lamportMutex = nullptr;
-    Specialist *specialist = nullptr;
+    static bool listening;
+    static unsigned int lamport;
 
-    void incrementLamportOnReceive(packet_t packet) {
-        pthread_mutex_lock(this->lamportMutex);
-        this->lamport = std::max(packet.lamport, this->lamport) + 1;
-        pthread_mutex_unlock(this->lamportMutex);
+    static pthread_mutex_t lamportMutex;
+
+    static void incrementLamportOnReceive(packet_t packet) {
+        pthread_mutex_lock(&lamportMutex);
+        lamport = std::max(packet.lamport, lamport) + 1;
+        pthread_mutex_unlock(&lamportMutex);
     }
 
 public:
-    Monitor(Specialist *specialist, pthread_mutex_t *lamportMutex) {
-        this->specialist = specialist;
-        this->lamportMutex = lamportMutex;
+    static int rank;
+    static int size;
+    static pthread_mutex_t handleMutex;
+    static pthread_mutex_t messageQueueMutex;
+    static std::queue<packet_t> messageQueue;
+
+    static void initialize() {
+        lamportMutex = PTHREAD_MUTEX_INITIALIZER;
+        handleMutex = PTHREAD_MUTEX_INITIALIZER;
+        messageQueueMutex = PTHREAD_MUTEX_INITIALIZER;
+        lamport = 0;
+        listening = false;
+
+        MPI_Comm_rank(MPI_COMM_WORLD, &Monitor::rank);
+        MPI_Comm_size(MPI_COMM_WORLD, &Monitor::size);
     }
 
-    void listen() {
-        this->listening = true;
+    static void listen() {
+        listening = true;
         MPI_Status status;
         packet_t packet;
         while(listening) {
             MPI_Recv( &packet, sizeof(packet_t), MPI_BYTE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-            printf("hlep");
-            this->incrementLamportOnReceive(packet);
-            this->specialist->handle(packet, status);
-            this->endListening();
+            printf("recive rank:%i thread:%d \n",rank,pthread_self());
+            packet.status = status;
+            pthread_mutex_lock(&Monitor::messageQueueMutex); // dostęp do kolejki wiadomości
+            messageQueue.push(packet);
+            pthread_mutex_unlock(&Monitor::messageQueueMutex);
+            pthread_mutex_unlock(&handleMutex); // odblokowanie handleLoop
+
+            // endListening();
         }
     }
 
-    void endListening() {
-        this->listening = false;
+    static void endListening() {
+        listening = false;
     }
 
-    void incrementLamportOnSend() {
-        pthread_mutex_lock(this->lamportMutex);
-        this->lamport += 1;
-        pthread_mutex_unlock(this->lamportMutex);
+    static void incrementLamportOnSend() {
+        pthread_mutex_lock(&lamportMutex);
+        lamport += 1;
+        pthread_mutex_unlock(&lamportMutex);
     }
 };
