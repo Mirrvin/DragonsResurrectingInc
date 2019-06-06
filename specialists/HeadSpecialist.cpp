@@ -14,8 +14,8 @@ public:
         switch(packet.status.MPI_TAG){
             case AVENGERS_ASSEMBLE:
                 success = this->handleAvengersAssemble(packet); break;
-            case END: 
-                success = this->handleEnd(packet); break;
+            case END:
+                success = Specialist::handleEnd(packet); break;
             default: 
                 printf("No handler for tag %d in HeadSpecialist\n", packet.status.MPI_TAG); break;
         }

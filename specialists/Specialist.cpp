@@ -11,9 +11,7 @@ void Specialist::sendMessage(int tag, int target) {
     this->sendMessage(packet, tag, target);
 }
 void Specialist::sendMessage(packet_t packet, int tag, int target) {
-    pthread_mutex_lock(&Monitor::mpiMutex);
     MPI_Send(&packet, sizeof(packet_t), MPI_BYTE, target, tag, MPI_COMM_WORLD);
-    pthread_mutex_unlock(&Monitor::mpiMutex);
 }
 
 void Specialist::broadcastMessage(int tag) {
@@ -23,9 +21,7 @@ void Specialist::broadcastMessage(int tag) {
 void Specialist::broadcastMessage(packet_t packet, int tag) {
     for(int i=1;i<this->size;i++){
         if(i != this->rank) {
-            pthread_mutex_lock(&Monitor::mpiMutex);
             MPI_Send(&packet, sizeof(packet_t), MPI_BYTE, i, tag, MPI_COMM_WORLD);
-            pthread_mutex_unlock(&Monitor::mpiMutex);
         }
     }
 }

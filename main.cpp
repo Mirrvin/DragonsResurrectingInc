@@ -4,7 +4,7 @@
 #include "specialists/HeadSpecialist.cpp"
 
 bool check_thread_support(int provided) {
-    return provided >= MPI_THREAD_FUNNELED;
+    return provided >= MPI_THREAD_MULTIPLE;
 }
 
 void rootLoop(int size){
@@ -32,13 +32,17 @@ void *handleLoop (void* s ) {
         pthread_mutex_lock(&Monitor::handleMutex); // czeka, aż kolejka nie będzie pusta
 
         pthread_mutex_lock(&Monitor::messageQueueMutex); // dostęp do kolejki wiadomości
-        packet_t packet = Monitor::messageQueue.front();
-        Monitor::messageQueue.pop();
-        pthread_mutex_unlock(&Monitor::messageQueueMutex);
-        printf("Message to handle by %d: { source: %d, tag: %d }\n",Monitor::rank, packet.status.MPI_SOURCE, packet.status.MPI_TAG);
-        if(!specialist->handle(packet)) {
-            end = true;
-            printf("Specialist with rank %d is stopping\n", Monitor::rank);
+        if(!Monitor::messageQueue.empty()) {
+            packet_t packet = Monitor::messageQueue.front();
+            Monitor::messageQueue.pop();
+            pthread_mutex_unlock(&Monitor::messageQueueMutex);
+            printf("Message to handle by %d: { source: %d, tag: %d }\n",Monitor::rank, packet.status.MPI_SOURCE, packet.status.MPI_TAG);
+            if(!specialist->handle(packet)) {
+                end = true;
+                printf("Specialist with rank %d is stopping\n", Monitor::rank);
+            }
+        } else {
+            pthread_mutex_unlock(&Monitor::messageQueueMutex);
         }
 
         pthread_mutex_lock(&Monitor::messageQueueMutex);
@@ -91,7 +95,7 @@ int main(int argc, char **argv)
             tailLoop();
         }
     } else {
-        printf("Threads are not supported. Exiting application");
+        printf("Multiple threads are not supported by open mpi. Exiting application");
     }
     MPI_Finalize();
     return 0;

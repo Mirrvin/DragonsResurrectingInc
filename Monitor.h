@@ -15,7 +15,6 @@ public:
     static int size;
     static pthread_mutex_t handleMutex;
     static pthread_mutex_t messageQueueMutex;
-    static pthread_mutex_t mpiMutex;
     static std::queue<packet_t> messageQueue;
 
     static void initialize();
