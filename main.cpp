@@ -2,6 +2,7 @@
 #include "Monitor.h"
 #include "specialists/Specialist.h"
 #include "specialists/HeadSpecialist.cpp"
+#include "specialists/BodySpecialist.cpp"
 
 bool check_thread_support(int provided) {
     return provided >= MPI_THREAD_MULTIPLE;
@@ -9,17 +10,21 @@ bool check_thread_support(int provided) {
 
 void rootLoop(int size){
     packet_t packet;
-    packet.id = 0;
+    packet.data = 0;
+
     // while(!end){
     //     sleep(rand()%1000+1000);
-        for(int i = 1;i < size; i++){
-            MPI_Send(&packet, sizeof(packet_t), MPI_BYTE, 1, TASK, MPI_COMM_WORLD);
-            printf("Issuer with rank %d sending data %d to rank %d\n", 0, packet.id, 1);
-        }
+
+        // for(int i = 1;i < size; i++){
+        //     MPI_Send(&packet, sizeof(packet_t), MPI_BYTE, 1, TASK, MPI_COMM_WORLD);
+        //     printf("Issuer with rank %d sending data %d to rank %d\n", 0, packet.data, 1);
+        // }
+        sleep(3);
         for(int i = 1;i < size; i++){
             MPI_Send(&packet, sizeof(packet_t), MPI_BYTE, i, END, MPI_COMM_WORLD);
-            printf("Issuer with rank %d sending data %d to rank %d\n", 0, packet.id, i);
+            printf("Issuer with rank %d sending data %d to rank %d\n", 0, packet.data, i);
         }
+
         // taskId++;
     // }
 
@@ -36,7 +41,7 @@ void *handleLoop (void* s ) {
             packet_t packet = Monitor::messageQueue.front();
             Monitor::messageQueue.pop();
             pthread_mutex_unlock(&Monitor::messageQueueMutex);
-            printf("Message to handle by %d: { source: %d, tag: %d }\n",Monitor::rank, packet.status.MPI_SOURCE, packet.status.MPI_TAG);
+            // printf("Message to handle by %d: { source: %d, tag: %d }\n",Monitor::rank, packet.status.MPI_SOURCE, packet.status.MPI_TAG);
             if(!specialist->handle(packet)) {
                 end = true;
                 printf("Specialist with rank %d is stopping\n", Monitor::rank);
@@ -56,8 +61,6 @@ void *handleLoop (void* s ) {
 }
 
 void headLoop(){
-    printf("headloop %d\n", Monitor::rank);
-
     Specialist *specialist = new HeadSpecialist(Monitor::rank, Monitor::size);
     pthread_t handleThread;
     pthread_create( &handleThread, NULL, &handleLoop, specialist);
@@ -67,9 +70,12 @@ void headLoop(){
 }
 
 void bodyLoop(){
-    printf("bodyloop %d\n", Monitor::rank);
-    // int resurrectionCounter = 0;
-    // int headId, tailId;
+    Specialist *specialist = new BodySpecialist(Monitor::rank, Monitor::size);
+    pthread_t handleThread;
+    pthread_create( &handleThread, NULL, &handleLoop, specialist);
+    Monitor::listen();
+    pthread_join(handleThread,NULL);
+    delete specialist;
 }
 void tailLoop(){
     printf("tailloop %d\n", Monitor::rank);

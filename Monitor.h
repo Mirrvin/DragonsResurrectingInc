@@ -22,6 +22,7 @@ public:
     static void listen();
     static void endListening();
     static void incrementLamportOnSend();
+    static unsigned int getLamport();
 };
 
 #endif
