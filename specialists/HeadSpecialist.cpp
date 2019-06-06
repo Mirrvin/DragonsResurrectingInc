@@ -1,26 +1,29 @@
 #include "../main.h"
 #include "Specialist.h"
-extern bool end;
+
 class HeadSpecialist: public Specialist {
 
 public:
     HeadSpecialist(int rank, int size):Specialist(rank, size) {
-        packet_t packet;
-        this->sendMessage(packet, AVENGERS_ASSEMBLE,rank);
-     }
+        this->sendMessage(AVENGERS_ASSEMBLE,rank);
+    }
 
-    void handle(packet_t packet) {
+    bool handle(packet_t packet) {
+        printf("Head specialist %d handling message with tag %d\n", this->rank, packet.status.MPI_TAG);
+        bool success = false;
         switch(packet.status.MPI_TAG){
             case AVENGERS_ASSEMBLE:
-                handleAvengersAssemble(packet); break;
+                success = this->handleAvengersAssemble(packet); break;
             case END: 
-                handleEnd(packet); break;
+                success = this->handleEnd(packet); break;
             default: 
-                printf("handle Dupa %d\n",pthread_self()); break;
+                printf("No handler for tag %d in HeadSpecialist\n", packet.status.MPI_TAG); break;
         }
+        return success;
     }
-    void handleAvengersAssemble(packet_t packet) {
-        broadcastMessage(NEED_BODY);
+    bool handleAvengersAssemble(packet_t packet) {
+        this->broadcastMessage(NEED_BODY);
+        return true;
     }
     // void send() {
     //     this->sendMessage();

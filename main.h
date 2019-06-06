@@ -2,7 +2,7 @@
 #define MAINH
 
 //  rodzaje procesów 
-#define ROOT 0
+#define ISSUER 0
 #define HEAD 1
 #define BODY 2
 #define TAIL 3
@@ -29,7 +29,6 @@
 #include <queue>
 #include <vector>
 
-bool end = false;
 
 typedef struct {
     int id;
@@ -37,8 +36,6 @@ typedef struct {
     unsigned int lamport;
     MPI_Status status;
 } packet_t;
-
-// MPI_Datatype MPI_PAKIET_T;
 
 #endif
 
