@@ -29,6 +29,13 @@ private:
             }
         }
     }
+    packet_t createSelfPacket() {
+        packet_t packet;
+        packet.status.MPI_SOURCE = this->rank;
+        packet.lamport = Monitor::getLamport();
+        return packet;
+    }
+
 public:
     BodySpecialist(int rank, int size):Specialist(rank, size) { }
 
@@ -82,15 +89,10 @@ public:
                 if(me == 0) {
                     this->notifyHeadsWithNoBodiesAssigned();
                 }
+                this->sendMessage(AVENGERS_ASSEMBLE, this->rank);
             }
         }
         return true;
     }
 
-    packet_t createSelfPacket() {
-        packet_t packet;
-        packet.status.MPI_SOURCE = this->rank;
-        packet.lamport = Monitor::getLamport();
-        return packet;
-    }
 };
