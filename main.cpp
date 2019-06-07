@@ -22,6 +22,11 @@ void rootLoop(int size){
         // }
         sleep(3);
         for(int i = 1;i < size; i++){
+            MPI_Send(&packet, sizeof(packet_t), MPI_BYTE, i, NEW_ORDER, MPI_COMM_WORLD);
+            printf("Issuer with rank %d sending data %d to rank %d\n", 0, packet.data, i);
+        }
+        sleep(3);
+        for(int i = 1;i < size; i++){
             MPI_Send(&packet, sizeof(packet_t), MPI_BYTE, i, END, MPI_COMM_WORLD);
             printf("Issuer with rank %d sending data %d to rank %d\n", 0, packet.data, i);
         }

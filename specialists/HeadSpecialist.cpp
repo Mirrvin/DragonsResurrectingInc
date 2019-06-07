@@ -15,9 +15,8 @@ public:
     }
 
     bool handle(packet_t packet) {
-        printf("Head specialist %d handling message with tag %d\n", this->rank, packet.status.MPI_TAG);
-        this->bodyRank = 0;
-        bool success = false;
+        // printf("Head specialist %d handling message with tag %d\n", this->rank, packet.status.MPI_TAG);
+        bool success = true;
         switch(packet.status.MPI_TAG){
             case AVENGERS_ASSEMBLE:
                 success = this->handleAvengersAssemble(packet); break;
@@ -25,6 +24,10 @@ public:
                 success = this->handleNeedBodyPositive(packet); break;
             case NEED_BODY_NEGATIVE:
                 success = this->handleNeedBodyNegative(packet); break;
+            case AVENGERS_ASSEMBLED:
+                success = this->handleAvengersAssembled(packet); break;
+            case RESURRECTION_FINISHED:
+                success = this->handleResurrectionFinished(packet); break;
             case END:
                 success = this->handleEnd(packet); break;
             default: 
@@ -48,6 +51,18 @@ public:
 
     bool handleNeedBodyNegative(packet_t packet) {
         this->sendMessage(AVENGERS_ASSEMBLE, this->rank);
+        return true;
+    }
+
+    bool handleAvengersAssembled(packet_t packet) {
+        this->tailRank = packet.status.MPI_SOURCE;
+        return true;
+    }
+
+    bool handleResurrectionFinished(packet_t packet) {
+        this->inTeam = false;
+        this->tailRank = 0;
+        this->bodyRank = 0;
         return true;
     }
 };

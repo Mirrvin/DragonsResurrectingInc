@@ -8,21 +8,26 @@
 #define TAIL 3
 
 //  tagi wiadomości 
-#define TASK 100
+#define NEW_ORDER 100
 #define END 101
 #define NEED_BODY 102
 #define NEED_TAIL 103
 #define AVENGERS_ASSEMBLE 104
-#define ACK_NEED_BODY 105
+#define NEED_BODY_ACK 105
 #define FINISH_NEED_BODY 106
 #define NEED_BODY_POSITIVE 107
 #define NEED_BODY_NEGATIVE 108
-#define ACK_NEED_TAIL 109
+#define NEED_TAIL_ACK 109
 #define FINISH_NEED_TAIL 110
 #define NEED_TAIL_POSITIVE 111
 #define NEED_TAIL_NEGATIVE 112
 #define AVENGERS_ASSEMBLED 113
-
+#define REQUES_ORDER_PRIORITY 114
+#define REPLY_ORDER_PRIORITY 115
+#define FREE_ORDER_PRIORITY 116
+#define DO_PAPERWORK 117
+#define DONE_PAPERWORK 118
+#define RESURRECTION_FINISHED 119
 
 //  parametry 
 #define SKELETON_NUMBER 5
@@ -50,6 +55,10 @@ inline bool comparePackets(const packet_t &a, const packet_t &b) {
     return (a.ressurectCounter < b.ressurectCounter) ||
            ((a.ressurectCounter == b.ressurectCounter) && (a.lamport < b.lamport)) ||
            ((a.ressurectCounter == b.ressurectCounter) && (a.lamport == b.lamport) && (a.status.MPI_SOURCE < b.status.MPI_SOURCE));
+}
+
+inline bool comparePacketsLamport(const packet_t &a, const packet_t &b) {
+    return a.lamport < b.lamport;
 }
 
 #endif

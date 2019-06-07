@@ -34,13 +34,13 @@ public:
     }
 
     bool handle(packet_t packet) {
-        printf("Body specialist %d handling message with tag %d\n", this->rank, packet.status.MPI_TAG);
-        bool success = false;
+        // printf("Body specialist %d handling message with tag %d\n", this->rank, packet.status.MPI_TAG);
+        bool success = true;
         switch(packet.status.MPI_TAG){
             case NEED_BODY:
                 success = this->handleNeedBody(packet); break;
-            case ACK_NEED_BODY:
-                success = this->handleAckNeedBody(packet); break;
+            case NEED_BODY_ACK:
+                success = this->handleNeedBodyAck(packet); break;
             case FINISH_NEED_BODY:
                 success = this->handleFinishNeedBody(packet); break;
             case NEED_TAIL_POSITIVE:
@@ -49,6 +49,10 @@ public:
                 success = this->handleNeedTailNegative(packet); break;
             case AVENGERS_ASSEMBLE:
                 success = this->handleAvengersAssemble(packet); break;
+            case DO_PAPERWORK:
+                success = this->handleDoPaperwork(packet); break;
+            case RESURRECTION_FINISHED:
+                success = this->handleResurrectionFinished(packet); break;
             case END:
                 success = this->handleEnd(packet); break;
             default: 
@@ -64,7 +68,7 @@ public:
                 this->bodyList.clear();
                 this->headList.clear();
                 packet_t packet = this->createSelfPacket();
-                packet_t sentPacket = this->broadcastMessage(packet, ACK_NEED_BODY, BODY);
+                packet_t sentPacket = this->broadcastMessage(packet, NEED_BODY_ACK, BODY);
                 this->bodyList.push_back(sentPacket);
                 this->sendMessage(FINISH_NEED_BODY, this->rank);
             }
@@ -73,7 +77,7 @@ public:
         return true;
     }
 
-    bool handleAckNeedBody(packet_t packet) {
+    bool handleNeedBodyAck(packet_t packet) {
         if(!this->inTeam) {
             this->bodyList.push_back(packet);
         }
@@ -121,6 +125,19 @@ public:
 
     bool handleNeedTailNegative(packet_t packet) {
         this->sendMessage(AVENGERS_ASSEMBLE, this->rank);
+        return true;
+    }
+
+    bool handleDoPaperwork(packet_t packet) {
+        printf("TODO implement handling paperwork request in Body Specialist...\n");
+        this->sendMessage(DONE_PAPERWORK, this->tailRank);
+        return true;
+    }
+
+    bool handleResurrectionFinished(packet_t packet) {
+        this->inTeam = false;
+        this->headRank = 0;
+        this->tailRank = 0;
         return true;
     }
 };
