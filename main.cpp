@@ -3,6 +3,7 @@
 #include "specialists/Specialist.h"
 #include "specialists/HeadSpecialist.cpp"
 #include "specialists/BodySpecialist.cpp"
+#include "specialists/TailSpecialist.cpp"
 
 bool check_thread_support(int provided) {
     return provided >= MPI_THREAD_MULTIPLE;
@@ -77,10 +78,14 @@ void bodyLoop(){
     pthread_join(handleThread,NULL);
     delete specialist;
 }
+
 void tailLoop(){
-    printf("tailloop %d\n", Monitor::rank);
-    // int resurrectionCounter = 0;
-    // int headId, bodyId;
+    Specialist *specialist = new TailSpecialist(Monitor::rank, Monitor::size);
+    pthread_t handleThread;
+    pthread_create( &handleThread, NULL, &handleLoop, specialist);
+    Monitor::listen();
+    pthread_join(handleThread,NULL);
+    delete specialist;
 }
 
 int main(int argc, char **argv)

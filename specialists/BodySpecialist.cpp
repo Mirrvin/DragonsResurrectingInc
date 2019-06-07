@@ -2,10 +2,12 @@
 #include "Specialist.h"
 #include "../Monitor.h"
 
-extern bool end;
 class BodySpecialist: public Specialist {
 private:
-    std::vector<packet_t> headsList;
+    int headRank;
+    int tailRank;
+    bool handlingNeedBody;
+    std::vector<packet_t> headList;
     std::vector<packet_t> bodyList;
 
     unsigned int getSelfIndexFromBodyList() {
@@ -15,29 +17,21 @@ private:
         }
         return this->bodyList.size();
     }
-    bool amIFirstBody() {
-        if(!this->bodyList.empty()) {
-            if(this->bodyList[0].status.MPI_SOURCE == this->rank)
-                return true;
-        }
-        return false;
-    }
+
     void notifyHeadsWithNoBodiesAssigned() {
-        if(this->headsList.size() > this->bodyList.size()) {
+        if(this->headList.size() > this->bodyList.size()) {
             for(unsigned int i=this->bodyList.size() - 1; i<this->bodyList.size(); i++) {
-                this->sendMessage(NEED_BODY_NEGATIVE, this->headsList[i].status.MPI_SOURCE);
+                this->sendMessage(NEED_BODY_NEGATIVE, this->headList[i].status.MPI_SOURCE);
             }
         }
     }
-    packet_t createSelfPacket() {
-        packet_t packet;
-        packet.status.MPI_SOURCE = this->rank;
-        packet.lamport = Monitor::getLamport();
-        return packet;
-    }
 
 public:
-    BodySpecialist(int rank, int size):Specialist(rank, size) { }
+    BodySpecialist(int rank, int size):Specialist(rank, size) {
+        this->headRank = 0;
+        this->tailRank = 0;
+        this->handlingNeedBody = false;
+    }
 
     bool handle(packet_t packet) {
         printf("Body specialist %d handling message with tag %d\n", this->rank, packet.status.MPI_TAG);
@@ -49,6 +43,12 @@ public:
                 success = this->handleAckNeedBody(packet); break;
             case FINISH_NEED_BODY:
                 success = this->handleFinishNeedBody(packet); break;
+            case NEED_TAIL_POSITIVE:
+                success = this->handleNeedTailPositive(packet); break;
+            case NEED_TAIL_NEGATIVE:
+                success = this->handleNeedTailNegative(packet); break;
+            case AVENGERS_ASSEMBLE:
+                success = this->handleAvengersAssemble(packet); break;
             case END:
                 success = this->handleEnd(packet); break;
             default: 
@@ -59,11 +59,16 @@ public:
 
     bool handleNeedBody(packet_t packet) {
         if(!this->inTeam) {
-            this->bodyList.clear();
-            this->headsList.clear();
-            this->headsList.push_back(packet);
-            this->broadcastMessage(ACK_NEED_BODY, BODY);
-            this->sendMessage(FINISH_NEED_BODY, this->rank);
+            if(!handlingNeedBody) {
+                this->handlingNeedBody = true;
+                this->bodyList.clear();
+                this->headList.clear();
+                packet_t packet = this->createSelfPacket();
+                packet_t sentPacket = this->broadcastMessage(packet, ACK_NEED_BODY, BODY);
+                this->bodyList.push_back(sentPacket);
+                this->sendMessage(FINISH_NEED_BODY, this->rank);
+            }
+            this->headList.push_back(packet);
         }
         return true;
     }
@@ -77,15 +82,16 @@ public:
 
     bool handleFinishNeedBody(packet_t packet) {
         if(!this->inTeam) {
-            this->bodyList.push_back(this->createSelfPacket());
+            this->handlingNeedBody = false;
             std::sort(this->bodyList.begin(), this->bodyList.end(), comparePackets);
-            std::sort(this->headsList.begin(), this->headsList.end(), comparePackets);
-            unsigned int me = getSelfIndexFromBodyList();
-            bool haveMatchingHead = this->headsList.size() > me;
+            std::sort(this->headList.begin(), this->headList.end(), comparePackets);
+            unsigned int me = this->getSelfIndexFromBodyList();
+            bool haveMatchingHead = (this->headList.size() > me) && (me < this->bodyList.size());
             if(haveMatchingHead) {
-                this->sendMessage(NEED_BODY_POSITIVE, this->headsList[me].status.MPI_SOURCE);
                 this->inTeam = true;
-                printf("Body specialist %d matched with head %d --->\n", this->rank, this->headsList[me].status.MPI_SOURCE);
+                this->headRank = this->headList[me].status.MPI_SOURCE;
+                this->sendMessage(NEED_BODY_POSITIVE, this->headList[me].status.MPI_SOURCE);
+                printf("Body specialist %d matched with head %d --->\n", this->rank, this->headList[me].status.MPI_SOURCE);
                 if(me == 0) {
                     this->notifyHeadsWithNoBodiesAssigned();
                 }
@@ -95,4 +101,26 @@ public:
         return true;
     }
 
+    bool handleAvengersAssemble(packet_t packet) {
+        if(this->inTeam) {
+            packet_t packet = this->createSelfPacket();
+            packet.data = this->headRank;
+            this->broadcastMessage(packet, NEED_TAIL, TAIL);
+        }
+        return true;
+    }
+
+    bool handleNeedTailPositive(packet_t packet) {
+        if(!this->inTeam) {
+            printf("<--- Body specialist %d matched with tail %d\n", this->rank, packet.status.MPI_SOURCE);
+            this->tailRank = packet.status.MPI_SOURCE;
+            this->inTeam = true;
+        }
+        return true;
+    }
+
+    bool handleNeedTailNegative(packet_t packet) {
+        this->sendMessage(AVENGERS_ASSEMBLE, this->rank);
+        return true;
+    }
 };

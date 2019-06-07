@@ -8,13 +8,14 @@ protected:
     int size;
     bool inTeam;
     int resurrectionCounter;
-    void sendMessage(int tag, int target);
-    void sendMessage(packet_t packet, int tag, int target);
-    void broadcastMessage(int tag);
-    void broadcastMessage(int tag, int targetType);
-    void broadcastMessage(packet_t packet, int tag);
-    void broadcastMessage(packet_t packet, int tag, int targetType);
+    packet_t sendMessage(int tag, int target);
+    packet_t sendMessage(packet_t packet, int tag, int target);
+    packet_t broadcastMessage(int tag);
+    packet_t broadcastMessage(int tag, int targetType);
+    packet_t broadcastMessage(packet_t packet, int tag);
+    packet_t broadcastMessage(packet_t packet, int tag, int targetType);
     bool handleEnd(packet_t packet);
+    packet_t createSelfPacket();
 
 public:
     Specialist(int rank, int size);

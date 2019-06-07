@@ -33,14 +33,13 @@ public:
         return success;
     }
     bool handleAvengersAssemble(packet_t packet) {
-        // this->bodyList.clear();
-        this->broadcastMessage(NEED_BODY, BODY);
+        this->broadcastMessage(this->createSelfPacket(), NEED_BODY, BODY);
         return true;
     }
 
     bool handleNeedBodyPositive(packet_t packet) {
         if(!this->inTeam) {
-            printf("<-- Head specialist %d matched with body %d\n", this->rank, packet.status.MPI_SOURCE);
+            printf("<--- Head specialist %d matched with body %d\n", this->rank, packet.status.MPI_SOURCE);
             this->bodyRank = packet.status.MPI_SOURCE;
             this->inTeam = true;
         }

@@ -8,41 +8,41 @@ Specialist::Specialist(int rank, int size) {
     this->inTeam = false;
 }
 Specialist::~Specialist() { }
-void Specialist::sendMessage(int tag, int target) {
+packet_t Specialist::sendMessage(int tag, int target) {
     packet_t packet;
-    this->sendMessage(packet, tag, target);
+    return this->sendMessage(packet, tag, target);
 }
-void Specialist::sendMessage(packet_t packet, int tag, int target) {
-    Monitor::incrementLamportOnSend();
-    packet.lamport = Monitor::getLamport();
+packet_t Specialist::sendMessage(packet_t packet, int tag, int target) {
+    packet.lamport = Monitor::incrementLamportOnSend();
     MPI_Send(&packet, sizeof(packet_t), MPI_BYTE, target, tag, MPI_COMM_WORLD);
+    return packet;
 }
 
-void Specialist::broadcastMessage(int tag) {
+packet_t Specialist::broadcastMessage(int tag) {
     packet_t packet;
-    this->broadcastMessage(packet, tag);
+    return this->broadcastMessage(packet, tag);
 }
-void Specialist::broadcastMessage(packet_t packet, int tag) {
-    Monitor::incrementLamportOnSend();
-    packet.lamport = Monitor::getLamport();
+packet_t Specialist::broadcastMessage(packet_t packet, int tag) {
+    packet.lamport = Monitor::incrementLamportOnSend();
     for(int i=1;i<this->size;i++){
         if(i != this->rank) {
             MPI_Send(&packet, sizeof(packet_t), MPI_BYTE, i, tag, MPI_COMM_WORLD);
         }
     }
+    return packet;
 }
-void Specialist::broadcastMessage(int tag, int targetType) {
+packet_t Specialist::broadcastMessage(int tag, int targetType) {
     packet_t packet;
-    this->broadcastMessage(packet, tag, targetType);
+    return this->broadcastMessage(packet, tag, targetType);
 }
-void Specialist::broadcastMessage(packet_t packet, int tag, int targetType) {
-    Monitor::incrementLamportOnSend();
-    packet.lamport = Monitor::getLamport();
+packet_t Specialist::broadcastMessage(packet_t packet, int tag, int targetType) {
+    packet.lamport = Monitor::incrementLamportOnSend();
     for(int i=1;i<this->size;i++){
         if(i != this->rank && (i%3 + 1) == targetType) {
             MPI_Send(&packet, sizeof(packet_t), MPI_BYTE, i, tag, MPI_COMM_WORLD);
         }
     }
+    return packet;
 }
 
 bool Specialist::handle(packet_t packet) {
@@ -53,4 +53,12 @@ bool Specialist::handle(packet_t packet) {
 
 bool Specialist::handleEnd(packet_t packet){
     return false;
+}
+
+packet_t Specialist::createSelfPacket() {
+    packet_t packet;
+    packet.ressurectCounter = this->resurrectionCounter;
+    packet.status.MPI_SOURCE = this->rank;
+    packet.lamport = Monitor::getLamport();
+    return packet;
 }

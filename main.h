@@ -17,6 +17,11 @@
 #define FINISH_NEED_BODY 106
 #define NEED_BODY_POSITIVE 107
 #define NEED_BODY_NEGATIVE 108
+#define ACK_NEED_TAIL 109
+#define FINISH_NEED_TAIL 110
+#define NEED_TAIL_POSITIVE 111
+#define NEED_TAIL_NEGATIVE 112
+#define AVENGERS_ASSEMBLED 113
 
 
 //  parametry 
@@ -41,11 +46,11 @@ typedef struct {
     MPI_Status status;
 } packet_t;
 
-inline bool operator> (const packet_t &a, const packet_t &b) {
-    return a.data >= b.data && a.lamport >= b.lamport && a.status.MPI_SOURCE > b.status.MPI_SOURCE;
-}
+// inline bool operator> (const packet_t &a, const packet_t &b) {
+//     return a.data >= b.data && a.lamport >= b.lamport && a.status.MPI_SOURCE > b.status.MPI_SOURCE;
+// }
 inline bool comparePackets(const packet_t &a, const packet_t &b) {
-    return a.data <= b.data && a.lamport <= b.lamport && a.status.MPI_SOURCE < b.status.MPI_SOURCE;
+    return a.ressurectCounter <= b.ressurectCounter && a.lamport <= b.lamport && a.status.MPI_SOURCE < b.status.MPI_SOURCE;
 }
 
 #endif
