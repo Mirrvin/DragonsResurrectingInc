@@ -12,9 +12,9 @@ pthread_mutex_t Monitor::messageQueueMutex = PTHREAD_MUTEX_INITIALIZER;
 std::queue<packet_t> Monitor::messageQueue;
 
 void Monitor::incrementLamportOnReceive(packet_t packet) {
-    pthread_mutex_lock(&lamportMutex);
-    lamport = std::max(packet.lamport, Monitor::lamport) + 1;
-    pthread_mutex_unlock(&lamportMutex);
+    pthread_mutex_lock(&Monitor::lamportMutex);
+    Monitor::lamport = std::max(packet.lamport, Monitor::lamport) + 1;
+    pthread_mutex_unlock(&Monitor::lamportMutex);
 }
 
 void Monitor::initialize() {
@@ -32,8 +32,9 @@ void Monitor::listen() {
     Monitor::listening = true;
     MPI_Status status;
     packet_t packet;
-    while(listening) {
+    while(Monitor::listening) {
         MPI_Recv( &packet, sizeof(packet_t), MPI_BYTE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+        Monitor::incrementLamportOnReceive(packet);
         packet.status = status;
         // printf("Monitor of rank %d recived data %d from %d with tag %d\n", Monitor::rank, packet.data, packet.status.MPI_SOURCE, packet.status.MPI_TAG);
         pthread_mutex_lock(&Monitor::messageQueueMutex); // dostęp do kolejki wiadomości
@@ -49,10 +50,12 @@ void Monitor::endListening() {
     Monitor::listening = false;
 }
 
-void Monitor::incrementLamportOnSend() {
+unsigned int Monitor::incrementLamportOnSend() {
     pthread_mutex_lock(&Monitor::lamportMutex);
     Monitor::lamport += 1;
+    unsigned int incrementedLamport = Monitor::lamport;
     pthread_mutex_unlock(&Monitor::lamportMutex);
+    return incrementedLamport;
 }
 
 unsigned int Monitor::getLamport() {
