@@ -9,7 +9,7 @@ Specialist::Specialist(int rank, int size) {
 }
 Specialist::~Specialist() { }
 packet_t Specialist::sendMessage(int tag, int target) {
-    packet_t packet;
+    packet_t packet = this->createSelfPacket();
     return this->sendMessage(packet, tag, target);
 }
 packet_t Specialist::sendMessage(packet_t packet, int tag, int target) {
@@ -19,7 +19,7 @@ packet_t Specialist::sendMessage(packet_t packet, int tag, int target) {
 }
 
 packet_t Specialist::broadcastMessage(int tag) {
-    packet_t packet;
+    packet_t packet = this->createSelfPacket();
     return this->broadcastMessage(packet, tag);
 }
 packet_t Specialist::broadcastMessage(packet_t packet, int tag) {
@@ -32,7 +32,7 @@ packet_t Specialist::broadcastMessage(packet_t packet, int tag) {
     return packet;
 }
 packet_t Specialist::broadcastMessage(int tag, int targetType) {
-    packet_t packet;
+    packet_t packet = this->createSelfPacket();
     return this->broadcastMessage(packet, tag, targetType);
 }
 packet_t Specialist::broadcastMessage(packet_t packet, int tag, int targetType) {
