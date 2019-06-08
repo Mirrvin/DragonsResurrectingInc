@@ -6,7 +6,9 @@ class BodySpecialist: public Specialist {
 private:
     int headRank;
     int tailRank;
+    int needDeskReplyCounter;
     bool handlingNeedBody;
+    bool gettingDesk;
     std::vector<packet_t> headList;
     std::vector<packet_t> bodyList;
     std::vector<packet_t> deskPriority;
@@ -48,7 +50,9 @@ public:
     BodySpecialist(int rank, int size):Specialist(rank, size) {
         this->headRank = 0;
         this->tailRank = 0;
+        this->needDeskReplyCounter = 0;
         this->handlingNeedBody = false;
+        this->gettingDesk = false;
     }
 
     bool handle(packet_t packet) {
@@ -67,10 +71,16 @@ public:
                 success = this->handleNeedTailNegative(packet); break;
             case AVENGERS_ASSEMBLE:
                 success = this->handleAvengersAssemble(packet); break;
-            case NEED_DESK:
-                success = this->handleNeedDesk(packet); break;
+            case NEED_DESK_REQUEST:
+                success = this->handleNeedDeskRequest(packet); break;
+            case NEED_DESK_REPLY:
+                success = this->handleNeedDeskReply(packet); break;
+            case FREE_DESK:
+                success = this->handleFreeDesk(packet); break;
             case DO_PAPERWORK:
                 success = this->handleDoPaperwork(packet); break;
+            case DONE_PAPERWORK:
+                success = this->handleDonePaperwork(packet); break;
             case RESURRECTION_FINISHED:
                 success = this->handleResurrectionFinished(packet); break;
             case END:
@@ -148,24 +158,41 @@ public:
         return true;
     }
 
-    bool handleNeedDesk(packet_t packet) {
-        this->removeFromDeskPriority(packet.status.MPI_SOURCE);
+    // bool handleNeedDesk(packet_t packet) {
+    //     this->removeFromDeskPriority(packet.status.MPI_SOURCE);
+    //     return true;
+    // }
+
+    bool handleDoPaperwork(packet_t packet) {
+        packet = this->broadcastMessage(NEED_DESK_REQUEST, BODY); // mowi innym BODY, zeby go dodali do kolejki
+        deskPriority.push_back(packet); // dodaje siebie
+        this->gettingDesk = true;
         return true;
     }
 
-    bool handleDoPaperwork(packet_t packet) {
-        // printf("TODO implement handling paperwork request in Body Specialist...\n");
-        packet = this->broadcastMessage(this->createSelfPacket(),NEED_DESK,BODY); // mowi innym BODY, zeby go dodali do kolejki
-        deskPriority.push_back(packet); // dodaje siebie
-        std::sort(this->deskPriority.begin(), this->deskPriority.end(), comparePackets);
-        int me = getSelfIndexFromDeskPriority();
-        do { // czeka aż bedzie mial biurko, glupi loop, ale nie powienien dlugo wisiec
-            std::sort(this->deskPriority.begin(), this->deskPriority.end(), comparePackets);
-            int me = getSelfIndexFromDeskPriority();
-        } while(me >= DESK_NUMBER);
+    bool handleNeedDeskRequest(packet_t packet) {
+        this->deskPriority.push_back(packet);
+        this->sendMessage(NEED_DESK_REPLY, packet.status.MPI_SOURCE);
+        return true;
+    }
 
-        this->broadcastMessage(this->createSelfPacket(),DONE_PAPERWORK,BODY); //mówi BODYm, żeby go usunęli z kolejek
-        this->removeFromDeskPriority(this->rank); // usuwanie siebie z kolejki
+    bool handleNeedDeskReply(packet_t packet) {
+        this->needDeskReplyCounter -= 1;
+        if(this->needDeskReplyCounter <= 0) {
+            this->tryToOccupyDesk();
+        }
+        return true;
+    }
+
+    bool handleFreeDesk(packet_t packet) {
+        this->removeFromDeskPriority(packet.status.MPI_SOURCE);
+        if(this->gettingDesk) {
+            this->tryToOccupyDesk();
+        }
+        return true;
+    }
+
+    bool handleDonePaperwork(packet_t packet) {
         this->sendMessage(DONE_PAPERWORK, this->tailRank);
         return true;
     }
@@ -175,5 +202,16 @@ public:
         this->headRank = 0;
         this->tailRank = 0;
         return true;
+    }
+
+    void tryToOccupyDesk() {
+        std::sort(this->deskPriority.begin(), this->deskPriority.end(), comparePacketsLamport);
+        unsigned int me = this->getSelfIndexFromDeskPriority();
+        if(me < this->deskPriority.size() && me < DESK_NUMBER) {
+            this->gettingDesk = false;
+            this->removeFromDeskPriority(this->rank);
+            this->broadcastMessage(FREE_DESK, BODY);
+            this->sendMessage(DONE_PAPERWORK, this->rank);
+        }
     }
 };
