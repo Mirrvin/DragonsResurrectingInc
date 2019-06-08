@@ -156,6 +156,9 @@ public:
 
     bool handleFreeOrderPriority(packet_t packet) {
         this->availableOrders -= 1;
+        this->orderPriority.erase(
+            this->orderPriority.begin() + 
+            this->getIndexFromOrderPriority(packet.status.MPI_SOURCE));
         if(this->gettingResurrectionOrder) {
             this->tryToAcceptOrder();
         }
