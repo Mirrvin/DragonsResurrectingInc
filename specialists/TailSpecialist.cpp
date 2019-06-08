@@ -66,7 +66,8 @@ public:
             case FREE_ORDER_PRIORITY:
                 success = this->handleFreeOrderPriority(packet); break;
             case NEW_ORDER:
-                success = this->handleNewOrder(packet); break;
+                printf("tryToAcceptOrder , rank: %d",this->rank); break;
+                // success = this->handleNewOrder(packet); break;
             case DONE_PAPERWORK:
                 success = this->handleDonePaperwork(packet); break;
             case RESURRECTION_FINISHED:
@@ -162,6 +163,7 @@ public:
 
     bool handleNewOrder(packet_t packet) {
         this->availableOrders += 1;
+        printf("hNO , rank: %d",this->rank);
         if(this->gettingResurrectionOrder) {
             this->tryToAcceptOrder();
         }

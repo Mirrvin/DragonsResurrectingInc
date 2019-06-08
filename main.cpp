@@ -3,7 +3,6 @@
 #include "specialists/Specialist.h"
 #include "specialists/HeadSpecialist.cpp"
 #include "specialists/BodySpecialist.cpp"
-#include "specialists/TailSpecialist.cpp"
 
 bool check_thread_support(int provided) {
     return provided >= MPI_THREAD_MULTIPLE;
@@ -12,27 +11,22 @@ bool check_thread_support(int provided) {
 void rootLoop(int size){
     packet_t packet;
     packet.data = 0;
+    // int taskId = 1;
 
-    // while(!end){
-    //     sleep(rand()%1000+1000);
-
-        // for(int i = 1;i < size; i++){
-        //     MPI_Send(&packet, sizeof(packet_t), MPI_BYTE, 1, TASK, MPI_COMM_WORLD);
-        //     printf("Issuer with rank %d sending data %d to rank %d\n", 0, packet.data, 1);
-        // }
-        sleep(3);
-        for(int i = 1;i < size; i++){
+    sleep(3);
+    for(int i = 1;i < size; i++){ // broadcast NEW_ORDER
+        if(i%3 + 1 == TAIL) {
             MPI_Send(&packet, sizeof(packet_t), MPI_BYTE, i, NEW_ORDER, MPI_COMM_WORLD);
-            printf("Issuer with rank %d sending data %d to rank %d\n", 0, packet.data, i);
+            printf("Issuer with rank %d sending NEW_ORDER to rank %d\n", 0, i);
         }
-        sleep(3);
-        for(int i = 1;i < size; i++){
-            MPI_Send(&packet, sizeof(packet_t), MPI_BYTE, i, END, MPI_COMM_WORLD);
-            printf("Issuer with rank %d sending data %d to rank %d\n", 0, packet.data, i);
-        }
+    }
+    // taskId++;
 
-        // taskId++;
-    // }
+    sleep(4);
+    for(int i = 1;i < size; i++){ // broadcast END
+        MPI_Send(&packet, sizeof(packet_t), MPI_BYTE, i, END, MPI_COMM_WORLD);
+        // printf("Issuer with rank %d sending END %d to rank %d\n", 0, packet.data, i);
+    }
 
 }
 
@@ -47,7 +41,7 @@ void *handleLoop (void* s ) {
             packet_t packet = Monitor::messageQueue.front();
             Monitor::messageQueue.pop();
             pthread_mutex_unlock(&Monitor::messageQueueMutex);
-            // printf("Message to handle by %d: { source: %d, tag: %d }\n",Monitor::rank, packet.status.MPI_SOURCE, packet.status.MPI_TAG);
+            printf("Message to handle by %d: { source: %d, tag: %d }\n",Monitor::rank, packet.status.MPI_SOURCE, packet.status.MPI_TAG);
             if(!specialist->handle(packet)) {
                 end = true;
                 printf("Specialist with rank %d is stopping\n", Monitor::rank);
@@ -83,14 +77,10 @@ void bodyLoop(){
     pthread_join(handleThread,NULL);
     delete specialist;
 }
-
 void tailLoop(){
-    Specialist *specialist = new TailSpecialist(Monitor::rank, Monitor::size);
-    pthread_t handleThread;
-    pthread_create( &handleThread, NULL, &handleLoop, specialist);
-    Monitor::listen();
-    pthread_join(handleThread,NULL);
-    delete specialist;
+    printf("tailloop %d\n", Monitor::rank);
+    // int resurrectionCounter = 0;
+    // int headId, bodyId;
 }
 
 int main(int argc, char **argv)

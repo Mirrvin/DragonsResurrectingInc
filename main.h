@@ -28,9 +28,10 @@
 #define DO_PAPERWORK 117
 #define DONE_PAPERWORK 118
 #define RESURRECTION_FINISHED 119
+#define NEED_DESK 120
 
 //  parametry 
-#define SKELETON_NUMBER 5
+#define SKELETON_NUMBER 3
 #define DESK_NUMBER 4
 
 

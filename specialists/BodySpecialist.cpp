@@ -9,6 +9,8 @@ private:
     bool handlingNeedBody;
     std::vector<packet_t> headList;
     std::vector<packet_t> bodyList;
+    std::vector<packet_t> deskPriority;
+
 
     unsigned int getSelfIndexFromBodyList() {
         for(unsigned int i=0; i<this->bodyList.size(); i++) {
@@ -18,10 +20,26 @@ private:
         return this->bodyList.size();
     }
 
+    unsigned int getSelfIndexFromDeskPriority() {
+        for(unsigned int i=0; i<this->deskPriority.size(); i++) {
+            if(this->rank == this->deskPriority[i].status.MPI_SOURCE)
+                return i;
+        }
+        return this->deskPriority.size();
+    }
+
     void notifyHeadsWithNoBodiesAssigned() {
         if(this->headList.size() > this->bodyList.size()) {
             for(unsigned int i=this->bodyList.size() - 1; i<this->bodyList.size(); i++) {
                 this->sendMessage(NEED_BODY_NEGATIVE, this->headList[i].status.MPI_SOURCE);
+            }
+        }
+    }
+
+    void removeFromDeskPriority(int rank) {
+        for(unsigned int i = 0; i < this->deskPriority.size(); i++) {
+            if (this->deskPriority[i].status.MPI_SOURCE == rank) {
+                this->deskPriority.erase(this->deskPriority.begin()+i);
             }
         }
     }
@@ -49,6 +67,8 @@ public:
                 success = this->handleNeedTailNegative(packet); break;
             case AVENGERS_ASSEMBLE:
                 success = this->handleAvengersAssemble(packet); break;
+            case NEED_DESK:
+                success = this->handleNeedDesk(packet); break;
             case DO_PAPERWORK:
                 success = this->handleDoPaperwork(packet); break;
             case RESURRECTION_FINISHED:
@@ -94,8 +114,8 @@ public:
             if(haveMatchingHead) {
                 this->inTeam = true;
                 this->headRank = this->headList[me].status.MPI_SOURCE;
-                this->sendMessage(NEED_BODY_POSITIVE, this->headList[me].status.MPI_SOURCE);
-                printf("Body specialist %d matched with head %d --->\n", this->rank, this->headList[me].status.MPI_SOURCE);
+                this->sendMessage(NEED_BODY_POSITIVE, this->headRank);
+                printf("Body specialist %d matched with head %d --->\n", this->rank, this->headRank);
                 if(me == 0) {
                     this->notifyHeadsWithNoBodiesAssigned();
                 }
@@ -128,8 +148,24 @@ public:
         return true;
     }
 
+    bool handleNeedDesk(packet_t packet) {
+        this->removeFromDeskPriority(packet.status.MPI_SOURCE);
+        return true;
+    }
+
     bool handleDoPaperwork(packet_t packet) {
-        printf("TODO implement handling paperwork request in Body Specialist...\n");
+        // printf("TODO implement handling paperwork request in Body Specialist...\n");
+        packet = this->broadcastMessage(this->createSelfPacket(),NEED_DESK,BODY); // mowi innym BODY, zeby go dodali do kolejki
+        deskPriority.push_back(packet); // dodaje siebie
+        std::sort(this->deskPriority.begin(), this->deskPriority.end(), comparePackets);
+        int me = getSelfIndexFromDeskPriority();
+        do { // czeka aż bedzie mial biurko, glupi loop, ale nie powienien dlugo wisiec
+            std::sort(this->deskPriority.begin(), this->deskPriority.end(), comparePackets);
+            int me = getSelfIndexFromDeskPriority();
+        } while(me >= DESK_NUMBER);
+
+        this->broadcastMessage(this->createSelfPacket(),DONE_PAPERWORK,BODY); //mówi BODYm, żeby go usunęli z kolejek
+        this->removeFromDeskPriority(this->rank); // usuwanie siebie z kolejki
         this->sendMessage(DONE_PAPERWORK, this->tailRank);
         return true;
     }

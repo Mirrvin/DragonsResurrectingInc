@@ -17,4 +17,4 @@ Specialist.o: specialists/Specialist.cpp specialists/Specialist.h
 clear: 
 	rm *.o smoki
 run:
-	mpirun --hostfile ./hostfile -np 4 ./smoki
+	mpirun --hostfile ./hostfile -np 8 ./smoki
