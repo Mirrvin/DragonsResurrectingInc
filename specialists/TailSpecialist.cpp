@@ -16,8 +16,10 @@ private:
 
     unsigned int getSelfIndexFromTailList() {
         for(unsigned int i=0; i<this->tailList.size(); i++) {
-            if(this->rank == this->tailList[i].status.MPI_SOURCE)
+            if(this->rank == this->tailList[i].status.MPI_SOURCE){
+                printf("check gSIFTL %d\n",i);
                 return i;
+            }
         }
         return this->bodyList.size();
     }
@@ -59,15 +61,14 @@ public:
                 success = this->handleFinishNeedTail(packet); break;
             case AVENGERS_ASSEMBLED:
                 success = this->handleAvengersAssembled(packet); break;
-            case REQUES_ORDER_PRIORITY:
+            case REQUEST_ORDER_PRIORITY:
                 success = this->handleRequestOrderPriority(packet); break;
             case REPLY_ORDER_PRIORITY:
                 success = this->handleReplyOrderPriority(packet); break;
             case FREE_ORDER_PRIORITY:
                 success = this->handleFreeOrderPriority(packet); break;
             case NEW_ORDER:
-                printf("tryToAcceptOrder , rank: %d",this->rank); break;
-                // success = this->handleNewOrder(packet); break;
+                success = this->handleNewOrder(packet); break;
             case DONE_PAPERWORK:
                 success = this->handleDonePaperwork(packet); break;
             case RESURRECTION_FINISHED:
@@ -127,11 +128,11 @@ public:
     }
 
     bool handleAvengersAssembled(packet_t packet) {
-        printf("--- Team assembled. Squad members: head %d, body %d, tail %d ---\n", this->headRank, this->bodyRank, this->rank);
+        printf("--- Team assembled. Squad members: head %d, body %d, tail %d ---\n",this->headRank, this->bodyRank, this->rank);
         this->gettingResurrectionOrder = true;
-        this->orderPriorityReplyCounter = (this->size+1)/3 -1;
+        this->orderPriorityReplyCounter = (this->size+1)/3 - 1;
         if(this->orderPriorityReplyCounter > 0) {
-            packet_t packet = this->broadcastMessage(REQUES_ORDER_PRIORITY, TAIL);
+            packet_t packet = this->broadcastMessage(REQUEST_ORDER_PRIORITY, TAIL);
             this->orderPriority.push_back(packet);
         } else {
             this->sendMessage(REPLY_ORDER_PRIORITY, this->rank);
@@ -163,7 +164,6 @@ public:
 
     bool handleNewOrder(packet_t packet) {
         this->availableOrders += 1;
-        printf("hNO , rank: %d",this->rank);
         if(this->gettingResurrectionOrder) {
             this->tryToAcceptOrder();
         }
@@ -188,14 +188,17 @@ public:
         return true;
     }
 
-    void tryToAcceptOrder() {
+    void tryToAcceptOrder() {        
         std::sort(this->orderPriority.begin(), this->orderPriority.end(), comparePacketsLamport);
         unsigned int me = this->getIndexFromOrderPriority(this->rank);
+        printf("tTAO me=%d , rank: %d\n",me,this->rank);
+        // if(this->rank == 2) {//just for testing!
         if(me == 0) {
             this->gettingResurrectionOrder = false;
             this->resurrecting = true;
             this->broadcastMessage(FREE_ORDER_PRIORITY, TAIL);
             this->beginDragonResurrection();
+            printf("Resurrecting , rank: %d\n",this->rank);
         }
     }
 
