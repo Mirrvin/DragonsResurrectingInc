@@ -12,16 +12,19 @@ bool check_thread_support(int provided) {
 void rootLoop(int size){
     packet_t packet;
     packet.data = 0;
-    // int taskId = 1;
+    int taskId = 1;
 
-    sleep(3);
+    for(int k=0; k<ORDER_NUMBER;k++) {
+    sleep(2);
+    printf("%u: New order no. %d!\n",Monitor::getLamport() ,taskId);
     for(int i = 1;i < size; i++){ // broadcast NEW_ORDER
         if(i%3 + 1 == TAIL) {
             MPI_Send(&packet, sizeof(packet_t), MPI_BYTE, i, NEW_ORDER, MPI_COMM_WORLD);
-            printf("Issuer with rank %d sending NEW_ORDER to rank %d\n", 0, i);
+            // printf("Issuer with rank %d sending NEW_ORDER to rank %d\n", 0, i);
         }
     }
-    // taskId++;
+    taskId++;
+    }
 
     sleep(5);
     for(int i = 1;i < size; i++){ // broadcast END
@@ -45,7 +48,7 @@ void *handleLoop (void* s ) {
             // printf("Message to handle by %d: { source: %d, tag: %d }\n",Monitor::rank, packet.status.MPI_SOURCE, packet.status.MPI_TAG);
             if(!specialist->handle(packet)) {
                 end = true;
-                printf("Specialist with rank %d is stopping\n", Monitor::rank);
+                // printf("Specialist with rank %d is stopping\n", Monitor::rank);
             }
         } else {
             pthread_mutex_unlock(&Monitor::messageQueueMutex);

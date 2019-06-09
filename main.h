@@ -35,6 +35,7 @@
 //  parametry 
 #define SKELETON_NUMBER 3
 #define DESK_NUMBER 4
+#define ORDER_NUMBER 2
 
 
 #include <mpi.h>

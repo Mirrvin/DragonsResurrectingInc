@@ -31,7 +31,7 @@ public:
             case END:
                 success = this->handleEnd(packet); break;
             default: 
-                printf("No handler for tag %d in HeadSpecialist\n", packet.status.MPI_TAG); break;
+                printf("%u: No handler for tag %d in HeadSpecialist\n", Monitor::getLamport(), packet.status.MPI_TAG); break;
         }
         return success;
     }
@@ -42,7 +42,7 @@ public:
 
     bool handleNeedBodyPositive(packet_t packet) {
         if(!this->inTeam) {
-            printf("<--- Head specialist %d matched with body %d\n", this->rank, packet.status.MPI_SOURCE);
+            printf("%u: <--- Head specialist %d matched with body %d\n", Monitor::getLamport(), this->rank, packet.status.MPI_SOURCE);
             this->bodyRank = packet.status.MPI_SOURCE;
             this->inTeam = true;
         }
@@ -63,6 +63,7 @@ public:
         this->inTeam = false;
         this->tailRank = 0;
         this->bodyRank = 0;
+        this->sendMessage(AVENGERS_ASSEMBLE,rank);
         return true;
     }
 };

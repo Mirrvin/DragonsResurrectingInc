@@ -36,7 +36,7 @@ void Monitor::listen() {
         MPI_Recv( &packet, sizeof(packet_t), MPI_BYTE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
         Monitor::incrementLamportOnReceive(packet);
         packet.status = status;
-        printf("%d: Monitors %d -> %d recived data %d with tag %d\n",Monitor::lamport, packet.status.MPI_SOURCE, Monitor::rank, packet.data, packet.status.MPI_TAG);
+        // printf("%d: Monitors %d -> %d recived data %d with tag %d\n",Monitor::lamport, packet.status.MPI_SOURCE, Monitor::rank, packet.data, packet.status.MPI_TAG);
         pthread_mutex_lock(&Monitor::messageQueueMutex); // dostęp do kolejki wiadomości
         Monitor::messageQueue.push(packet);
         pthread_mutex_unlock(&Monitor::messageQueueMutex);
