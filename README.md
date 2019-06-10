@@ -1,2 +1,2 @@
 # Dragons Resurrecting Inc.
-Bartek weźmy się do pracy
+Ubić smoka może byle idiota. Za to wskrzesić... do tego potrzeba profesjonalisty. Są dwa rodzaje procesów: jeden generuje co pewien czas zlecenie. O zlecenie ubiegają się profesjonaliści o jednej z trzech możliwych specjalizacji (głowa, ogon, tułów). Do realizacji zlecenia potrzeba trzech profesjonalistów o różnych specjalizacjach - należy zapewnić, by nie doszło do zakleszczeń! Dodatkowo, profesjonaliści muszą wypełnić robotę papierkową (robi to jeden z nich) przy jednym z b biurek w gildii Wskrzeszania Smoków. Następnie profesjonaliści zdobywają dostęp do jednego z s szkieletów smoków i rozpoczynają wskrzeszanie. Należy zapewnić, by profesjonaliści dzielili się w miarę równo pracą.

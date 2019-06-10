@@ -1,13 +1,17 @@
 #include "Monitor.h"
 
+int Monitor::currentSkeletons = SKELETON_NUMBER;
 int Monitor::rank;
 int Monitor::size;
 bool Monitor::listening = false;
 unsigned int Monitor::lamport = 0;
 
+
 pthread_mutex_t Monitor::lamportMutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t Monitor::handleMutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t Monitor::messageQueueMutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t Monitor::skeletonsMutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t Monitor::newOrderMutex = PTHREAD_MUTEX_INITIALIZER;
 
 std::queue<packet_t> Monitor::messageQueue;
 
@@ -28,14 +32,20 @@ void Monitor::finalize() {
     pthread_mutex_destroy(&Monitor::lamportMutex);
 }
 
+packet_t Monitor::receiveMessage() {
+    packet_t packet;
+    MPI_Status status;
+    MPI_Recv( &packet, sizeof(packet_t), MPI_BYTE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    packet.status = status;
+    Monitor::incrementLamportOnReceive(packet);
+    return packet;
+}
+
 void Monitor::listen() {
     Monitor::listening = true;
-    MPI_Status status;
     packet_t packet;
     while(Monitor::listening) {
-        MPI_Recv( &packet, sizeof(packet_t), MPI_BYTE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-        Monitor::incrementLamportOnReceive(packet);
-        packet.status = status;
+        packet = Monitor::receiveMessage();
         // printf("%d: Monitors %d -> %d recived data %d with tag %d\n",Monitor::lamport, packet.status.MPI_SOURCE, Monitor::rank, packet.data, packet.status.MPI_TAG);
         pthread_mutex_lock(&Monitor::messageQueueMutex); // dostęp do kolejki wiadomości
         Monitor::messageQueue.push(packet);

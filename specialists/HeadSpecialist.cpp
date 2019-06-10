@@ -42,7 +42,7 @@ public:
 
     bool handleNeedBodyPositive(packet_t packet) {
         if(!this->inTeam) {
-            printf("%u: <--- Head specialist %d matched with body %d\n", Monitor::getLamport(), this->rank, packet.status.MPI_SOURCE);
+            // printf("%u: <--- Head specialist %d matched with body %d\n", Monitor::getLamport(), this->rank, packet.status.MPI_SOURCE);
             this->bodyRank = packet.status.MPI_SOURCE;
             this->inTeam = true;
         }

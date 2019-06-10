@@ -127,7 +127,7 @@ public:
                 this->inTeam = true;
                 this->headRank = this->headList[me].status.MPI_SOURCE;
                 this->sendMessage(NEED_BODY_POSITIVE, this->headRank);
-                printf("%u: Body specialist %d matched with head %d --->\n",Monitor::getLamport(), this->rank, this->headRank);
+                // printf("%u: Body specialist %d matched with head %d --->\n",Monitor::getLamport(), this->rank, this->headRank);
                 if(me == 0) {
                     this->notifyHeadsWithNoBodiesAssigned();
                 }
@@ -148,7 +148,7 @@ public:
 
     bool handleNeedTailPositive(packet_t packet) {
         if(this->tailRank == 0) {
-            printf("%u: <--- Body specialist %d matched with tail %d\n",Monitor::getLamport(), this->rank, packet.status.MPI_SOURCE);
+            // printf("%u: <--- Body specialist %d matched with tail %d\n",Monitor::getLamport(), this->rank, packet.status.MPI_SOURCE);
             this->tailRank = packet.status.MPI_SOURCE;
             this->inTeam = true;
         }
