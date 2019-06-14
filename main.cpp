@@ -84,9 +84,10 @@ void rootLoop(int size){
     packet_t packet;
     packet.data = 0;
     int orderId = 1;
-    sleep(2);
+    sleep(12);
 
-    while(orderId <= ORDER_NUMBER) { 
+    // while(orderId <= ORDER_NUMBER) { 
+    while(true) { 
         pthread_mutex_lock(&Monitor::newOrderMutex);
 
         pthread_mutex_lock(&Monitor::skeletonsMutex);
@@ -107,11 +108,11 @@ void rootLoop(int size){
         orderId++;
     }
 
-    sleep(3);
-    for(int i = 1;i < size; i++){ // broadcast END
-        MPI_Send(&packet, sizeof(packet_t), MPI_BYTE, i, END, MPI_COMM_WORLD);
-    }
-    sendMessage(END, ISSUER);
+    // sleep(3);
+    // for(int i = 1;i < size; i++){ // broadcast END
+    //     MPI_Send(&packet, sizeof(packet_t), MPI_BYTE, i, END, MPI_COMM_WORLD);
+    // }
+    // sendMessage(END, ISSUER);
 }
 
 void headLoop(){

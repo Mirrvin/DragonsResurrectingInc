@@ -33,7 +33,7 @@
 #define FREE_DESK 122
 
 //  parametry 
-#define SKELETON_NUMBER 3
+#define SKELETON_NUMBER 2
 #define DESK_NUMBER 1
 #define ORDER_NUMBER 5
 
