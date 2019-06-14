@@ -134,25 +134,40 @@ public:
     bool handleAvengersAssembled(packet_t packet) {
         printf("%u: --- Team assembled. Squad members: head %d, body %d, tail %d ---\n",Monitor::getLamport(),this->headRank, this->bodyRank, this->rank);
         this->gettingResurrectionOrder = true;
-        this->orderPriorityReplyCounter = (this->size+1)/3 - 1;
+        // printf("%u: --- TA po gettingResurrectionOrder, rank: %d\n",Monitor::getLamport(), this->rank);
+        this->orderPriorityReplyCounter = (this->size)/3 - 1;
+        // printf("%u: --- TA po (this->size)/3 - 1, rank: %d\n",Monitor::getLamport(), this->rank);
         if(this->orderPriorityReplyCounter > 0) {
+            // printf("%u: --- TA in IF, rank: %d\n",Monitor::getLamport(), this->rank);
             packet_t packet = this->broadcastMessage(REQUEST_ORDER_PRIORITY, TAIL);
+            // printf("%u: --- TA in IF after broadcast, rank: %d\n",Monitor::getLamport(), this->rank);
             this->orderPriority.push_back(packet);
+            // printf("%u: --- TA in IF aster push_back, rank: %d\n",Monitor::getLamport(), this->rank);
+
         } else {
+            // printf("%u: --- TA in ELSE, rank: %d\n",Monitor::getLamport(), this->rank);
             this->sendMessage(REPLY_ORDER_PRIORITY, this->rank);
         }
+        // printf("%u: --- TA RET, rank: %d\n",Monitor::getLamport(), this->rank);
         return true;
     }
 
     bool handleRequestOrderPriority(packet_t packet) {
+        // printf("%u: handleRequestOrderPriority , rank: %d\n",Monitor::getLamport(), this->rank);
         this->orderPriority.push_back(packet);
         this->sendMessage(REPLY_ORDER_PRIORITY, packet.status.MPI_SOURCE);
         return true;
     }
 
     bool handleReplyOrderPriority(packet_t packet) {
-        this->orderPriorityReplyCounter -= 1;
-        if(this->orderPriorityReplyCounter <= 0) {
+        // printf("%u: handleReplyOrderPriority, orderPriorityReplyCounter: %d, rank: %d,    ",Monitor::getLamport(), this->orderPriorityReplyCounter,this->rank);
+        if (this->orderPriorityReplyCounter == 1) {
+            this->orderPriorityReplyCounter = 0;
+        } else {
+            this->orderPriorityReplyCounter -= 1;
+        }
+        // printf("%u: handleReplyOrderPriority2, orderPriorityReplyCounter: %d, rank: %d,    ",Monitor::getLamport(), this->orderPriorityReplyCounter,this->rank);
+        if(this->orderPriorityReplyCounter == 0) {
             this->tryToAcceptOrder();
         }
         return true;
@@ -161,9 +176,11 @@ public:
     bool handleFreeOrderPriority(packet_t packet) {
         if(this->availableOrders > 0) this->availableOrders -= 1;
         // printf("%u: handleFreeOrderPriority, availableOrders: %d, rank: %d\n",Monitor::getLamport(), this->availableOrders, this->rank);
-        this->orderPriority.erase(
+        if(this->getIndexFromOrderPriority(packet.status.MPI_SOURCE) < this->bodyList.size()) {
+            this->orderPriority.erase(
             this->orderPriority.begin() + 
             this->getIndexFromOrderPriority(packet.status.MPI_SOURCE));
+        }
         if(this->gettingResurrectionOrder && this->availableOrders > 0) {
             this->tryToAcceptOrder();
         }

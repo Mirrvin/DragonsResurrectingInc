@@ -176,6 +176,7 @@ public:
     // }
 
     bool handleDoPaperwork(packet_t packet) {
+        this->needDeskReplyCounter = 1/3*(this->size+1)-1;
         packet = this->broadcastMessage(NEED_DESK_REQUEST, BODY); // mowi innym BODY, zeby go dodali do kolejki
         deskPriority.push_back(packet); // dodaje siebie
         this->gettingDesk = true;

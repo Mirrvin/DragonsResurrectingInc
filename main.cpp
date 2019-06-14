@@ -46,12 +46,15 @@ void *issuerMonitor (void* x) {
 void *handleLoop (void* s ) {
     Specialist *specialist = (Specialist*) s;
     bool end = false;
+    int count = 0;
     while(!end) {
+        // printf("%u: handleLoop BEG, count: %d, rank: %d\n",Monitor::getLamport(),count,Monitor::rank);
         pthread_mutex_lock(&Monitor::handleMutex); // czeka, aż kolejka nie będzie pusta
 
         pthread_mutex_lock(&Monitor::messageQueueMutex); // dostęp do kolejki wiadomości
         if(!Monitor::messageQueue.empty()) {
             packet_t packet = Monitor::messageQueue.front();
+            // printf("%u: handleLoop FRONT, count: %d, rank: %d, tag: %d\n",Monitor::getLamport(),count,Monitor::rank,packet.status.MPI_TAG);
             Monitor::messageQueue.pop();
             pthread_mutex_unlock(&Monitor::messageQueueMutex);
             if(!specialist->handle(packet)) {
@@ -66,6 +69,8 @@ void *handleLoop (void* s ) {
             pthread_mutex_unlock(&Monitor::handleMutex); // kolejka nie jest pusta, lecimy dalej
         }
         pthread_mutex_unlock(&Monitor::messageQueueMutex);
+        // printf("%u: handleLoop END, count: %d, rank: %d\n",Monitor::getLamport(),count,Monitor::rank);
+        count++;
     }
     Monitor::endListening();
     pthread_exit(NULL);
@@ -102,7 +107,7 @@ void rootLoop(int size){
         orderId++;
     }
 
-    sleep(5);
+    sleep(3);
     for(int i = 1;i < size; i++){ // broadcast END
         MPI_Send(&packet, sizeof(packet_t), MPI_BYTE, i, END, MPI_COMM_WORLD);
     }
