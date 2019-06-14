@@ -46,7 +46,7 @@ public:
     bool handleNeedBodyPositive(packet_t packet) {
         // printf("%u: handleNeedBodyPositive, rank: %d\n", Monitor::getLamport(), this->rank);
         if(!this->inTeam) {
-            printf("%u: <--- Head specialist %d matched with body %d\n", Monitor::getLamport(), this->rank, packet.status.MPI_SOURCE);
+            // printf("%u: <--- Head specialist %d matched with body %d\n", Monitor::getLamport(), this->rank, packet.status.MPI_SOURCE);
             this->bodyRank = packet.status.MPI_SOURCE;
             this->inTeam = true;
             this->sendMessage(NEED_BODY_POSITIVE, packet.status.MPI_SOURCE);

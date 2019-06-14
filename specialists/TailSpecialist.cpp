@@ -35,7 +35,7 @@ private:
 
     void notifyBodiesWithNoTailsAssigned() {
         if(this->bodyList.size() > this->tailList.size()) {
-            for(unsigned int i=this->tailList.size() - 1; i<this->tailList.size(); i++) {
+            for(unsigned int i=this->bodyList.size() - 1; i<this->tailList.size(); i++) {
                 this->sendMessage(NEED_TAIL_NEGATIVE, this->bodyList[i].status.MPI_SOURCE);
             }
         }
@@ -164,7 +164,7 @@ public:
         if (this->orderPriorityReplyCounter == 1) {
             this->orderPriorityReplyCounter = 0;
         } else {
-            this->orderPriorityReplyCounter -= 1;
+            this->orderPriorityReplyCounter = this->orderPriorityReplyCounter - 1;
         }
         // printf("%u: handleReplyOrderPriority2, orderPriorityReplyCounter: %d, rank: %d,    ",Monitor::getLamport(), this->orderPriorityReplyCounter,this->rank);
         if(this->orderPriorityReplyCounter == 0) {
@@ -217,7 +217,7 @@ public:
     }
 
     bool handleNeedTailPositive(packet_t packet) {
-        printf("%u: Tail specialist %d matched with body %d --->\n",Monitor::getLamport(), this->rank, packet.status.MPI_SOURCE);
+        // printf("%u: Tail specialist %d matched with body %d --->\n",Monitor::getLamport(), this->rank, packet.status.MPI_SOURCE);
         this->bodyRank = packet.status.MPI_SOURCE;
         this->sendMessage(AVENGERS_ASSEMBLED, this->rank);
         this->sendMessage(AVENGERS_ASSEMBLED, this->headRank);
@@ -236,7 +236,7 @@ public:
     void tryToAcceptOrder() {
         std::sort(this->orderPriority.begin(), this->orderPriority.end(), comparePacketsLamport);
         unsigned int me = this->getIndexFromOrderPriority(this->rank);
-        // printf("%u: tryToAcceptOrder , rank: %d\n",Monitor::getLamport(), this->rank);
+        // printf("%u: tryToAcceptOrder, me: %d , rank: %d\n",Monitor::getLamport(),me, this->rank);
         if(me == 0 && this->availableOrders > 0) { 
             printf("%u: Got the order , rank: %d\n",Monitor::getLamport(), this->rank);
             // this->availableOrders -= 1;
@@ -244,6 +244,8 @@ public:
             this->gettingResurrectionOrder = false;
             this->resurrecting = true;
             this->broadcastMessage(FREE_ORDER_PRIORITY, TAIL);
+            this->orderPriority.erase(
+                this->orderPriority.begin() + me);
             this->beginDragonResurrection();
         }
     }

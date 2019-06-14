@@ -34,7 +34,7 @@ private:
 
     void notifyHeadsWithNoBodiesAssigned() {
         if(this->headList.size() > this->bodyList.size()) {
-            for(unsigned int i=this->bodyList.size() - 1; i<this->bodyList.size(); i++) {
+            for(unsigned int i=this->bodyList.size() - 1; i<this->headList.size(); i++) {
                 this->sendMessage(NEED_BODY_NEGATIVE, this->headList[i].status.MPI_SOURCE);
             }
         }
@@ -155,7 +155,7 @@ public:
 
     bool handleNeedTailPositive(packet_t packet) {
         if(this->tailRank == 0) {
-            printf("%u: <--- Body specialist %d matched with tail %d\n",Monitor::getLamport(), this->rank, packet.status.MPI_SOURCE);
+            // printf("%u: <--- Body specialist %d matched with tail %d\n",Monitor::getLamport(), this->rank, packet.status.MPI_SOURCE);
             this->tailRank = packet.status.MPI_SOURCE;
             this->inTeam = true;
             this->sendMessage(NEED_TAIL_POSITIVE, packet.status.MPI_SOURCE);
@@ -242,10 +242,12 @@ public:
         unsigned int me = this->getSelfIndexFromDeskPriority();
         if(me < this->deskPriority.size() && me < DESK_NUMBER) {
             printf("%u: Got desk, doing Paper work, rank: %d\n",Monitor::getLamport(),this->rank);
+            sleep(1);
             this->gettingDesk = false;
             this->removeFromDeskPriority(this->rank);
             this->broadcastMessage(FREE_DESK, BODY);
             this->sendMessage(DONE_PAPERWORK, this->rank);
+            printf("%u: Freeing desk, doing Paper work, rank: %d\n",Monitor::getLamport(),this->rank);
         }
     }
 };
