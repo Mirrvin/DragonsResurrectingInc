@@ -45,8 +45,7 @@ void Monitor::listen() {
     Monitor::listening = true;
     packet_t packet;
     while(Monitor::listening) {
-        packet = Monitor::receiveMessage();
-        // printf("%d: Monitors %d -> %d recived data %d with tag %d\n",Monitor::lamport, packet.status.MPI_SOURCE, Monitor::rank, packet.data, packet.status.MPI_TAG);
+        packet = Monitor::receiveMessage();   
         pthread_mutex_lock(&Monitor::messageQueueMutex); // dostęp do kolejki wiadomości
         Monitor::messageQueue.push(packet);
         pthread_mutex_unlock(&Monitor::messageQueueMutex);

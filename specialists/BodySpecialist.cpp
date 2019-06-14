@@ -1,6 +1,5 @@
 #include "../main.h"
 #include "Specialist.h"
-// #include "../Monitor.h"
 
 class BodySpecialist: public Specialist {
 private:
@@ -24,8 +23,7 @@ private:
 
     unsigned int getSelfIndexFromDeskPriority() {
         for(unsigned int i=0; i<this->deskPriority.size(); i++) {
-            if(this->rank == this->deskPriority[i].status.MPI_SOURCE){
-                // printf("getSelfIndexFromDeskPriority , rank: %d i: %d\n",this->rank,i);
+            if(this->rank == this->deskPriority[i].status.MPI_SOURCE){                
                 return i;
             }
         }
@@ -57,8 +55,7 @@ public:
         this->gettingDesk = false;
     }
 
-    bool handle(packet_t packet) {
-        // printf("Body specialist %d handling message with tag %d\n", this->rank, packet.status.MPI_TAG);
+    bool handle(packet_t packet) {        
         bool success = true;
         switch(packet.status.MPI_TAG){
             case NEED_BODY:
@@ -97,8 +94,7 @@ public:
         return success;
     }
 
-    bool handleNeedBody(packet_t packet) {
-    // printf("%u: handleNeedBody, rank: %d\n", Monitor::getLamport(), this->rank);
+    bool handleNeedBody(packet_t packet) {    
         if(this->headRank == 0) {
             if(!handlingNeedBody) {
                 this->handlingNeedBody = true;
@@ -121,24 +117,20 @@ public:
         return true;
     }
 
-    bool handleFinishNeedBody(packet_t packet) {
-    // printf("%u: handleFinishNeedBody, headRank: %d, rank: %d\n", Monitor::getLamport(), this->headRank, this->rank);
+    bool handleFinishNeedBody(packet_t packet) {    
         if(this->headRank == 0) {
             this->handlingNeedBody = false;
             std::sort(this->bodyList.begin(), this->bodyList.end(), comparePackets);
             std::sort(this->headList.begin(), this->headList.end(), comparePackets);
             unsigned int me = this->getSelfIndexFromBodyList();
             bool haveMatchingHead = (this->headList.size() > me) && (me < this->bodyList.size());
-            if(haveMatchingHead) {
-                // printf("%u: handleFinishNeedBody haveMatchingHead, headRank: %d, rank: %d\n", Monitor::getLamport(), this->headRank, this->rank);
+            if(haveMatchingHead) {               
                 this->inTeam = true;
-                // this->headRank = this->headList[me].status.MPI_SOURCE; 
                 this->sendMessage(NEED_BODY_POSITIVE, this->headList[me].status.MPI_SOURCE);
-                // printf("%u: Body specialist %d matched with head %d --->\n",Monitor::getLamport(), this->rank, this->headRank);
+                
                 if(me == 0) {
                     this->notifyHeadsWithNoBodiesAssigned();
                 }
-                // this->sendMessage(AVENGERS_ASSEMBLE, this->rank);
             }
         }
         return true;
@@ -154,8 +146,7 @@ public:
     }
 
     bool handleNeedTailPositive(packet_t packet) {
-        if(this->tailRank == 0) {
-            // printf("%u: <--- Body specialist %d matched with tail %d\n",Monitor::getLamport(), this->rank, packet.status.MPI_SOURCE);
+        if(this->tailRank == 0) {           
             this->tailRank = packet.status.MPI_SOURCE;
             this->inTeam = true;
             this->sendMessage(NEED_TAIL_POSITIVE, packet.status.MPI_SOURCE);
@@ -170,11 +161,6 @@ public:
         return true;
     }
 
-    // bool handleNeedDesk(packet_t packet) {
-    //     this->removeFromDeskPriority(packet.status.MPI_SOURCE);
-    //     return true;
-    // }
-
     bool handleDoPaperwork(packet_t packet) {
         this->needDeskReplyCounter = 1/3*(this->size+1)-1;
         packet = this->broadcastMessage(NEED_DESK_REQUEST, BODY); // mowi innym BODY, zeby go dodali do kolejki
@@ -183,8 +169,7 @@ public:
         return true;
     }
 
-    bool handleNeedDeskRequest(packet_t packet) {
-        // printf("DeskRequest , rank: %d\n",this->rank);
+    bool handleNeedDeskRequest(packet_t packet) {        
         this->deskPriority.push_back(packet);
         this->sendMessage(NEED_DESK_REPLY, packet.status.MPI_SOURCE);
         return true;
@@ -198,8 +183,7 @@ public:
         return true;
     }
 
-    bool handleFreeDesk(packet_t packet) {
-        // printf("FreeDesk , rank: %d\n",this->rank);
+    bool handleFreeDesk(packet_t packet) {       
         this->removeFromDeskPriority(packet.status.MPI_SOURCE);
         if(this->gettingDesk) {
             this->tryToOccupyDesk();
@@ -207,22 +191,19 @@ public:
         return true;
     }
 
-    bool handleDonePaperwork(packet_t packet) {
-        // printf("DonePaperwork , rank: %d --- his tail: %d\n",this->rank,this->tailRank);
+    bool handleDonePaperwork(packet_t packet) {      
         this->sendMessage(DONE_PAPERWORK, this->tailRank);
         return true;
     }
 
-    bool handleResurrectionFinished(packet_t packet) {
-        // printf("FinishedResurrecting , rank: %d\n",this->rank);
+    bool handleResurrectionFinished(packet_t packet) {        
         this->inTeam = false;
         this->headRank = 0;
         this->tailRank = 0;
         return true;
     }
 
-    bool handleNeedBodyPositive(packet_t packet) {
-        // printf("%u: <--- Body specialist %d matched with tail %d\n",Monitor::getLamport(), this->rank, packet.status.MPI_SOURCE);
+    bool handleNeedBodyPositive(packet_t packet) {       
         this->headRank = packet.status.MPI_SOURCE;
         this->sendMessage(AVENGERS_ASSEMBLE, this->rank);
         this->handlingNeedBody = false;
@@ -237,7 +218,6 @@ public:
     }
 
     void tryToOccupyDesk() {
-        // printf("tryToOccupyDesk , rank: %d\n",this->rank);
         std::sort(this->deskPriority.begin(), this->deskPriority.end(), comparePacketsLamport);
         unsigned int me = this->getSelfIndexFromDeskPriority();
         if(me < this->deskPriority.size() && me < DESK_NUMBER) {

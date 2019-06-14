@@ -48,13 +48,10 @@ void *handleLoop (void* s ) {
     bool end = false;
     int count = 0;
     while(!end) {
-        // printf("%u: handleLoop BEG, count: %d, rank: %d\n",Monitor::getLamport(),count,Monitor::rank);
         pthread_mutex_lock(&Monitor::handleMutex); // czeka, aż kolejka nie będzie pusta
-
         pthread_mutex_lock(&Monitor::messageQueueMutex); // dostęp do kolejki wiadomości
         if(!Monitor::messageQueue.empty()) {
-            packet_t packet = Monitor::messageQueue.front();
-            // printf("%u: handleLoop FRONT, count: %d, rank: %d, tag: %d\n",Monitor::getLamport(),count,Monitor::rank,packet.status.MPI_TAG);
+            packet_t packet = Monitor::messageQueue.front();           
             Monitor::messageQueue.pop();
             pthread_mutex_unlock(&Monitor::messageQueueMutex);
             if(!specialist->handle(packet)) {
@@ -68,8 +65,7 @@ void *handleLoop (void* s ) {
         if(!Monitor::messageQueue.empty()) {
             pthread_mutex_unlock(&Monitor::handleMutex); // kolejka nie jest pusta, lecimy dalej
         }
-        pthread_mutex_unlock(&Monitor::messageQueueMutex);
-        // printf("%u: handleLoop END, count: %d, rank: %d\n",Monitor::getLamport(),count,Monitor::rank);
+        pthread_mutex_unlock(&Monitor::messageQueueMutex);       
         count++;
     }
     Monitor::endListening();
@@ -116,7 +112,6 @@ void rootLoop(int size){
 }
 
 void headLoop(){
-    // printf("headloop %d\n", Monitor::rank);
     Specialist *specialist = new HeadSpecialist(Monitor::rank, Monitor::size);
     pthread_t handleThread;
     pthread_create( &handleThread, NULL, &handleLoop, specialist);
@@ -126,7 +121,6 @@ void headLoop(){
 }
 
 void bodyLoop(){
-    // printf("bodyloop %d\n", Monitor::rank);
     Specialist *specialist = new BodySpecialist(Monitor::rank, Monitor::size);
     pthread_t handleThread;
     pthread_create( &handleThread, NULL, &handleLoop, specialist);
@@ -134,8 +128,7 @@ void bodyLoop(){
     pthread_join(handleThread,NULL);
     delete specialist;
 }
-void tailLoop(){
-    // printf("tailloop %d\n", Monitor::rank);
+void tailLoop(){   
     Specialist *specialist = new TailSpecialist(Monitor::rank,Monitor::size);
     pthread_t handleThread;
     pthread_create(&handleThread, NULL, &handleLoop, specialist);

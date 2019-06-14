@@ -51,7 +51,6 @@ public:
     }
 
     bool handle(packet_t packet) {
-        // printf("Tail specialist %d handling message with tag %d\n", this->rank, packet.status.MPI_TAG);
         bool success = true;
         switch(packet.status.MPI_TAG){
             case NEED_TAIL:
@@ -134,39 +133,24 @@ public:
     bool handleAvengersAssembled(packet_t packet) {
         printf("%u: --- Team assembled. Squad members: head %d, body %d, tail %d ---\n",Monitor::getLamport(),this->headRank, this->bodyRank, this->rank);
         this->gettingResurrectionOrder = true;
-        // printf("%u: --- TA po gettingResurrectionOrder, rank: %d\n",Monitor::getLamport(), this->rank);
         this->orderPriorityReplyCounter = (this->size)/3 - 1;
-        // printf("%u: --- TA po (this->size)/3 - 1, rank: %d\n",Monitor::getLamport(), this->rank);
         if(this->orderPriorityReplyCounter > 0) {
-            // printf("%u: --- TA in IF, rank: %d\n",Monitor::getLamport(), this->rank);
             packet_t packet = this->broadcastMessage(REQUEST_ORDER_PRIORITY, TAIL);
-            // printf("%u: --- TA in IF after broadcast, rank: %d\n",Monitor::getLamport(), this->rank);
             this->orderPriority.push_back(packet);
-            // printf("%u: --- TA in IF aster push_back, rank: %d\n",Monitor::getLamport(), this->rank);
-
         } else {
-            // printf("%u: --- TA in ELSE, rank: %d\n",Monitor::getLamport(), this->rank);
             this->sendMessage(REPLY_ORDER_PRIORITY, this->rank);
         }
-        // printf("%u: --- TA RET, rank: %d\n",Monitor::getLamport(), this->rank);
         return true;
     }
 
     bool handleRequestOrderPriority(packet_t packet) {
-        // printf("%u: handleRequestOrderPriority , rank: %d\n",Monitor::getLamport(), this->rank);
         this->orderPriority.push_back(packet);
         this->sendMessage(REPLY_ORDER_PRIORITY, packet.status.MPI_SOURCE);
         return true;
     }
 
     bool handleReplyOrderPriority(packet_t packet) {
-        // printf("%u: handleReplyOrderPriority, orderPriorityReplyCounter: %d, rank: %d,    ",Monitor::getLamport(), this->orderPriorityReplyCounter,this->rank);
-        if (this->orderPriorityReplyCounter == 1) {
-            this->orderPriorityReplyCounter = 0;
-        } else {
-            this->orderPriorityReplyCounter = this->orderPriorityReplyCounter - 1;
-        }
-        // printf("%u: handleReplyOrderPriority2, orderPriorityReplyCounter: %d, rank: %d,    ",Monitor::getLamport(), this->orderPriorityReplyCounter,this->rank);
+        this->orderPriorityReplyCounter -= 1;
         if(this->orderPriorityReplyCounter == 0) {
             this->tryToAcceptOrder();
         }
@@ -175,11 +159,10 @@ public:
 
     bool handleFreeOrderPriority(packet_t packet) {
         if(this->availableOrders > 0) this->availableOrders -= 1;
-        // printf("%u: handleFreeOrderPriority, availableOrders: %d, rank: %d\n",Monitor::getLamport(), this->availableOrders, this->rank);
         if(this->getIndexFromOrderPriority(packet.status.MPI_SOURCE) < this->bodyList.size()) {
             this->orderPriority.erase(
-            this->orderPriority.begin() + 
-            this->getIndexFromOrderPriority(packet.status.MPI_SOURCE));
+                this->orderPriority.begin() + 
+                this->getIndexFromOrderPriority(packet.status.MPI_SOURCE));
         }
         if(this->gettingResurrectionOrder && this->availableOrders > 0) {
             this->tryToAcceptOrder();
@@ -189,7 +172,6 @@ public:
 
     bool handleNewOrder(packet_t packet) {
         this->availableOrders += 1;
-        // printf("%u: handleNewOrder, availableOrders: %d, rank: %d\n",Monitor::getLamport(), this->availableOrders, this->rank);
         if(this->gettingResurrectionOrder)  {
             this->tryToAcceptOrder();
         }
@@ -197,7 +179,6 @@ public:
     }
 
     bool handleDonePaperwork(packet_t packet) {
-        // printf("tail, after paperwork, rank:%d\n",this->rank);
         if(this->resurrecting) {
             this->sendMessage(RESURRECTION_FINISHED, this->rank);
         }
@@ -217,7 +198,6 @@ public:
     }
 
     bool handleNeedTailPositive(packet_t packet) {
-        // printf("%u: Tail specialist %d matched with body %d --->\n",Monitor::getLamport(), this->rank, packet.status.MPI_SOURCE);
         this->bodyRank = packet.status.MPI_SOURCE;
         this->sendMessage(AVENGERS_ASSEMBLED, this->rank);
         this->sendMessage(AVENGERS_ASSEMBLED, this->headRank);
@@ -236,11 +216,10 @@ public:
     void tryToAcceptOrder() {
         std::sort(this->orderPriority.begin(), this->orderPriority.end(), comparePacketsLamport);
         unsigned int me = this->getIndexFromOrderPriority(this->rank);
-        // printf("%u: tryToAcceptOrder, me: %d , rank: %d\n",Monitor::getLamport(),me, this->rank);
         if(me == 0 && this->availableOrders > 0) { 
             printf("%u: Got the order , rank: %d\n",Monitor::getLamport(), this->rank);
-            // this->availableOrders -= 1;
-            if(this->availableOrders > 0) this->availableOrders -= 1;
+            if(this->availableOrders > 0) 
+                this->availableOrders -= 1;
             this->gettingResurrectionOrder = false;
             this->resurrecting = true;
             this->broadcastMessage(FREE_ORDER_PRIORITY, TAIL);
@@ -251,7 +230,6 @@ public:
     }
 
     void beginDragonResurrection() {
-        // printf("beginResurrecting , rank: %d\n",this->rank);
         this->resurrecting = true;
         this->sendMessage(DO_PAPERWORK, this->bodyRank);
     }

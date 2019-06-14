@@ -1,10 +1,8 @@
 #include "../main.h"
 #include "Specialist.h"
-// #include "../Monitor.h"
 
 class HeadSpecialist: public Specialist {
 private:
-    // std::vector<packet_t> bodyList;
     int bodyRank;
     int tailRank;
 
@@ -15,8 +13,7 @@ public:
         this->sendMessage(AVENGERS_ASSEMBLE,rank);
     }
 
-    bool handle(packet_t packet) {
-        // printf("Head specialist %d handling message with tag %d\n", this->rank, packet.status.MPI_TAG);
+    bool handle(packet_t packet) {    
         bool success = true;
         switch(packet.status.MPI_TAG){
             case AVENGERS_ASSEMBLE:
@@ -36,17 +33,14 @@ public:
         }
         return success;
     }
-    bool handleAvengersAssemble(packet_t packet) {
-        // printf("%u: Body start %d\n", Monitor::getLamport(), this->rank);
+    bool handleAvengersAssemble(packet_t packet) {       
         if(this->bodyRank == 0)
             this->broadcastMessage(this->createSelfPacket(), NEED_BODY, BODY);
         return true;
     }
 
-    bool handleNeedBodyPositive(packet_t packet) {
-        // printf("%u: handleNeedBodyPositive, rank: %d\n", Monitor::getLamport(), this->rank);
-        if(!this->inTeam) {
-            // printf("%u: <--- Head specialist %d matched with body %d\n", Monitor::getLamport(), this->rank, packet.status.MPI_SOURCE);
+    bool handleNeedBodyPositive(packet_t packet) {       
+        if(!this->inTeam) {           
             this->bodyRank = packet.status.MPI_SOURCE;
             this->inTeam = true;
             this->sendMessage(NEED_BODY_POSITIVE, packet.status.MPI_SOURCE);
