@@ -1,5 +1,5 @@
 #include "Specialist.h"
-#include "../Monitor.h"
+// #include "../Monitor.h"
 
 Specialist::Specialist(int rank, int size) { 
     this->rank = rank;

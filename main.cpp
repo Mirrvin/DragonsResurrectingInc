@@ -72,7 +72,7 @@ void *handleLoop (void* s ) {
 }
 
 void rootLoop(int size){
-    printf("Heads: 3, 6, 9...\nBodys: 1, 4, 7...\nTails: 2, 5, 8...\n");
+    printf("Heads: 3, 6, 9...\nBodies: 1, 4, 7...\nTails: 2, 5, 8...\nSKELETON_NUMBER %d\nDESK_NUMBER %d\nORDER_NUMBER %d\n",SKELETON_NUMBER,DESK_NUMBER,ORDER_NUMBER);
     pthread_t issuerMonitorThread;
     pthread_create( &issuerMonitorThread, NULL, &issuerMonitor,NULL);
 

@@ -1,6 +1,6 @@
 #include "../main.h"
 #include "Specialist.h"
-#include "../Monitor.h"
+// #include "../Monitor.h"
 
 class BodySpecialist: public Specialist {
 private:
@@ -85,6 +85,10 @@ public:
                 success = this->handleDonePaperwork(packet); break;
             case RESURRECTION_FINISHED:
                 success = this->handleResurrectionFinished(packet); break;
+            case NEED_BODY_POSITIVE:
+                success = this->handleNeedBodyPositive(packet); break;
+            case NEED_BODY_NEGATIVE:
+                success = this->handleNeedBodyNegative(packet); break;
             case END:
                 success = this->handleEnd(packet); break;
             default: 
@@ -94,7 +98,8 @@ public:
     }
 
     bool handleNeedBody(packet_t packet) {
-        if(!this->inTeam) {
+    // printf("%u: handleNeedBody, rank: %d\n", Monitor::getLamport(), this->rank);
+        if(this->headRank == 0) {
             if(!handlingNeedBody) {
                 this->handlingNeedBody = true;
                 this->bodyList.clear();
@@ -117,21 +122,23 @@ public:
     }
 
     bool handleFinishNeedBody(packet_t packet) {
-        if(!this->inTeam) {
+    // printf("%u: handleFinishNeedBody, headRank: %d, rank: %d\n", Monitor::getLamport(), this->headRank, this->rank);
+        if(this->headRank == 0) {
             this->handlingNeedBody = false;
             std::sort(this->bodyList.begin(), this->bodyList.end(), comparePackets);
             std::sort(this->headList.begin(), this->headList.end(), comparePackets);
             unsigned int me = this->getSelfIndexFromBodyList();
             bool haveMatchingHead = (this->headList.size() > me) && (me < this->bodyList.size());
             if(haveMatchingHead) {
+                // printf("%u: handleFinishNeedBody haveMatchingHead, headRank: %d, rank: %d\n", Monitor::getLamport(), this->headRank, this->rank);
                 this->inTeam = true;
-                this->headRank = this->headList[me].status.MPI_SOURCE;
-                this->sendMessage(NEED_BODY_POSITIVE, this->headRank);
+                // this->headRank = this->headList[me].status.MPI_SOURCE; 
+                this->sendMessage(NEED_BODY_POSITIVE, this->headList[me].status.MPI_SOURCE);
                 // printf("%u: Body specialist %d matched with head %d --->\n",Monitor::getLamport(), this->rank, this->headRank);
                 if(me == 0) {
                     this->notifyHeadsWithNoBodiesAssigned();
                 }
-                this->sendMessage(AVENGERS_ASSEMBLE, this->rank);
+                // this->sendMessage(AVENGERS_ASSEMBLE, this->rank);
             }
         }
         return true;
@@ -148,9 +155,12 @@ public:
 
     bool handleNeedTailPositive(packet_t packet) {
         if(this->tailRank == 0) {
-            // printf("%u: <--- Body specialist %d matched with tail %d\n",Monitor::getLamport(), this->rank, packet.status.MPI_SOURCE);
+            printf("%u: <--- Body specialist %d matched with tail %d\n",Monitor::getLamport(), this->rank, packet.status.MPI_SOURCE);
             this->tailRank = packet.status.MPI_SOURCE;
             this->inTeam = true;
+            this->sendMessage(NEED_TAIL_POSITIVE, packet.status.MPI_SOURCE);
+        } else {
+            this->sendMessage(NEED_TAIL_NEGATIVE, packet.status.MPI_SOURCE);
         }
         return true;
     }
@@ -207,6 +217,21 @@ public:
         this->inTeam = false;
         this->headRank = 0;
         this->tailRank = 0;
+        return true;
+    }
+
+    bool handleNeedBodyPositive(packet_t packet) {
+        // printf("%u: <--- Body specialist %d matched with tail %d\n",Monitor::getLamport(), this->rank, packet.status.MPI_SOURCE);
+        this->headRank = packet.status.MPI_SOURCE;
+        this->sendMessage(AVENGERS_ASSEMBLE, this->rank);
+        this->handlingNeedBody = false;
+        return true;
+    }
+
+    bool handleNeedBodyNegative(packet_t packet) {
+        this->headRank = 0;
+        this->handlingNeedBody = false;
+        this->broadcastMessage(AVENGERS_ASSEMBLE,HEAD);
         return true;
     }
 

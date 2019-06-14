@@ -1,5 +1,6 @@
 #include "../main.h"
 #include "Specialist.h"
+// #include "../Monitor.h"
 
 class HeadSpecialist: public Specialist {
 private:
@@ -36,15 +37,21 @@ public:
         return success;
     }
     bool handleAvengersAssemble(packet_t packet) {
-        this->broadcastMessage(this->createSelfPacket(), NEED_BODY, BODY);
+        // printf("%u: Body start %d\n", Monitor::getLamport(), this->rank);
+        if(this->bodyRank == 0)
+            this->broadcastMessage(this->createSelfPacket(), NEED_BODY, BODY);
         return true;
     }
 
     bool handleNeedBodyPositive(packet_t packet) {
+        // printf("%u: handleNeedBodyPositive, rank: %d\n", Monitor::getLamport(), this->rank);
         if(!this->inTeam) {
-            // printf("%u: <--- Head specialist %d matched with body %d\n", Monitor::getLamport(), this->rank, packet.status.MPI_SOURCE);
+            printf("%u: <--- Head specialist %d matched with body %d\n", Monitor::getLamport(), this->rank, packet.status.MPI_SOURCE);
             this->bodyRank = packet.status.MPI_SOURCE;
             this->inTeam = true;
+            this->sendMessage(NEED_BODY_POSITIVE, packet.status.MPI_SOURCE);
+        } else {
+            this->sendMessage(NEED_BODY_NEGATIVE, packet.status.MPI_SOURCE);
         }
         return true;
     }

@@ -1,5 +1,7 @@
 #include "../main.h"
 #include "Specialist.h"
+#include "../Monitor.h"
+
 class TailSpecialist: public Specialist {
 private:
     int headRank;
@@ -72,9 +74,13 @@ public:
                 success = this->handleDonePaperwork(packet); break;
             case RESURRECTION_FINISHED:
                 success = this->handleResurrectionFinished(packet); break;
+            case NEED_TAIL_POSITIVE:
+                success = this->handleNeedTailPositive(packet); break;
+            case NEED_TAIL_NEGATIVE:
+                success = this->handleNeedTailNegative(packet); break;
             case END:
                 success = this->handleEnd(packet); break;
-            default: 
+            default:
                 printf("%u: No handler for tag %d in HeadSpecialist\n",Monitor::getLamport(), packet.status.MPI_TAG); break;
         }
         return success;
@@ -111,16 +117,15 @@ public:
             unsigned int me = this->getSelfIndexFromTailList();
             bool haveMatchingBody = (this->bodyList.size() > me) && (me < this->tailList.size());
             if(haveMatchingBody) {
-                this->inTeam = true;
-                this->bodyRank = this->bodyList[me].status.MPI_SOURCE;
+                // this->inTeam = true;
+                // this->bodyRank = this->bodyList[me].status.MPI_SOURCE;
                 this->headRank = this->bodyList[me].data;
                 this->sendMessage(NEED_TAIL_POSITIVE, this->bodyList[me].status.MPI_SOURCE);
-                // printf("%u: Tail specialist %d matched with body %d --->\n",Monitor::getLamport(), this->rank, this->bodyList[me].status.MPI_SOURCE);
                 if(me == 0) {
                     this->notifyBodiesWithNoTailsAssigned();
                 }
-                this->sendMessage(AVENGERS_ASSEMBLED, this->rank);
-                this->sendMessage(AVENGERS_ASSEMBLED, this->headRank);
+                // this->sendMessage(AVENGERS_ASSEMBLED, this->rank);
+                // this->sendMessage(AVENGERS_ASSEMBLED, this->headRank);
             }
         }
         return true;
@@ -154,8 +159,8 @@ public:
     }
 
     bool handleFreeOrderPriority(packet_t packet) {
-        this->availableOrders -= 1;
-        printf("%u: handleFreeOrderPriority, availableOrders: %d, rank: %d\n",Monitor::getLamport(), this->availableOrders, this->rank);
+        if(this->availableOrders > 0) this->availableOrders -= 1;
+        // printf("%u: handleFreeOrderPriority, availableOrders: %d, rank: %d\n",Monitor::getLamport(), this->availableOrders, this->rank);
         this->orderPriority.erase(
             this->orderPriority.begin() + 
             this->getIndexFromOrderPriority(packet.status.MPI_SOURCE));
@@ -167,7 +172,7 @@ public:
 
     bool handleNewOrder(packet_t packet) {
         this->availableOrders += 1;
-        printf("%u: handleNewOrder, availableOrders: %d, rank: %d\n",Monitor::getLamport(), this->availableOrders, this->rank);
+        // printf("%u: handleNewOrder, availableOrders: %d, rank: %d\n",Monitor::getLamport(), this->availableOrders, this->rank);
         if(this->gettingResurrectionOrder)  {
             this->tryToAcceptOrder();
         }
@@ -194,13 +199,31 @@ public:
         return true;
     }
 
+    bool handleNeedTailPositive(packet_t packet) {
+        printf("%u: Tail specialist %d matched with body %d --->\n",Monitor::getLamport(), this->rank, packet.status.MPI_SOURCE);
+        this->bodyRank = packet.status.MPI_SOURCE;
+        this->sendMessage(AVENGERS_ASSEMBLED, this->rank);
+        this->sendMessage(AVENGERS_ASSEMBLED, this->headRank);
+        this->handlingNeedTail = false;
+        this->inTeam = true;
+        return true;
+    }
+
+    bool handleNeedTailNegative(packet_t packet) {
+        this->headRank = 0;
+        this->handlingNeedTail = false;
+        this->inTeam = false;
+        return true;
+    }
+
     void tryToAcceptOrder() {
         std::sort(this->orderPriority.begin(), this->orderPriority.end(), comparePacketsLamport);
         unsigned int me = this->getIndexFromOrderPriority(this->rank);
-        printf("%u: tryToAcceptOrder , rank: %d\n",Monitor::getLamport(), this->rank);
+        // printf("%u: tryToAcceptOrder , rank: %d\n",Monitor::getLamport(), this->rank);
         if(me == 0 && this->availableOrders > 0) { 
             printf("%u: Got the order , rank: %d\n",Monitor::getLamport(), this->rank);
-            this->availableOrders -= 1;
+            // this->availableOrders -= 1;
+            if(this->availableOrders > 0) this->availableOrders -= 1;
             this->gettingResurrectionOrder = false;
             this->resurrecting = true;
             this->broadcastMessage(FREE_ORDER_PRIORITY, TAIL);

@@ -1,6 +1,7 @@
 #ifndef SPECIALIST
 #define SPECIALIST
 #include "../main.h"
+#include "../Monitor.h"
 
 class Specialist {
 protected:
